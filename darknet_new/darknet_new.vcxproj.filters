@@ -1,0 +1,344 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="c">
+      <UniqueIdentifier>{e48cbed1-2a82-4b32-910b-4c04c7bdfd7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cu">
+      <UniqueIdentifier>{a9989a07-feeb-48a3-b271-67bd1d4863e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="h">
+      <UniqueIdentifier>{88e9e1ee-27f2-452c-b35e-b73952b44b58}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\gemm.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cuda.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\deconvolutional_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\convolutional_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\list.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\image.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\activations.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\im2col.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\col2im.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\blas.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crop_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dropout_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\maxpool_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\softmax_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\data.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matrix.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\network.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\connected_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cost_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parser.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\option_list.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\darknet.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\detection_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imagenet.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\captcha.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\route_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\writing.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\box.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\nightmare.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\normalization_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\avgpool_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\coco.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dice.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\yolo.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\compare.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\classifier.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\local_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\swag.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\shortcut_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\activation_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rnn_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gru_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rnn.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rnn_vid.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\crnn_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\coco_demo.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tag.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cifar.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\yolo_demo.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\go.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\batchnorm_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\art.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cyolo.c">
+      <Filter>c</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\convolutional_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\deconvolutional_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\activation_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\im2col_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\col2im_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\blas_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\crop_layer_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\dropout_layer_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\maxpool_layer_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\softmax_layer_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\network_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\avgpool_layer_kernels.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\gemm.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cuda.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\deconvolutional_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\convolutional_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\list.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\image.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\activations.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\im2col.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\col2im.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\blas.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crop_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dropout_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\maxpool_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\softmax_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\data.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\matrix.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\network.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\activation_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\avgpool_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\batchnorm_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\box.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\classifier.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\connected_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cost_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crnn_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\detection_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gru_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\local_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\normalization_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\option_list.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parser.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rnn_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\route_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shortcut_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stb_image.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stb_image_write.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\xnor_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\unistd.h">
+      <Filter>h</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

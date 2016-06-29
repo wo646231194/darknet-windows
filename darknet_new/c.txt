@@ -1,0 +1,3 @@
+"gemm.c" "utils.c" "cuda.c" "deconvolutional_layer.c" "convolutional_layer.c" "list.c" "image.c" "activations.c" "im2col.c" "col2im.c" "blas.c" "crop_layer.c" "dropout_layer.c" "maxpool_layer.c" "softmax_layer.c" "data.c" "matrix.c" "network.c"
+"connected_layer.c" "cost_layer.c" "parser.c" "option_list.c" "darknet.c" "detection_layer.c" "imagenet.c" "captcha.c" "route_layer.c" "writing.c" "box.c" "nightmare.c" "normalization_layer.c" "avgpool_layer.c" "coco.c" "dice.c" "yolo.c" 
+"layer.c" "compare.c" "classifier.c" "local_layer.c" "swag.c" "shortcut_layer.c" "activation_layer.c" "rnn_layer.c" "gru_layer.c" "rnn.c" "rnn_vid.c" "crnn_layer.c" "coco_demo.c" "tag.c" "cifar.c" "yolo_demo.c" "go.c" "batchnorm_layer.c" "art.c"

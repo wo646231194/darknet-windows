@@ -1,0 +1,9 @@
+Debug/
+Release/
+x64/
+darknet_new/Debug/
+darknet_new/Release/
+darknet_new/x64/
+darknet_new.sdf
+darknet_new.v12.suo
+darknet_new/vc120.pdb

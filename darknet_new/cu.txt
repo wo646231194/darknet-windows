@@ -1,0 +1,2 @@
+"convolutional_kernels.cu" "deconvolutional_kernels.cu" "activation_kernels.cu" "im2col_kernels.cu" "col2im_kernels.cu" "blas_kernels.cu" "crop_layer_kernels.cu" 
+"dropout_layer_kernels.cu" "maxpool_layer_kernels.cu" "softmax_layer_kernels.cu" "network_kernels.cu" "avgpool_layer_kernels.cu"
