@@ -89,6 +89,25 @@ void average(int argc, char *argv[])
     save_weights(sum, outfile);
 }
 
+void operations(char *cfgfile)
+{
+	gpu_index = -1;
+	network net = parse_network_cfg(cfgfile);
+	int i;
+	long ops = 0;
+	for (i = 0; i < net.n; ++i){
+		layer l = net.layers[i];
+		if (l.type == CONVOLUTIONAL){
+			ops += 2 * l.n * l.size*l.size*l.c * l.out_h*l.out_w;
+		}
+		else if (l.type == CONNECTED){
+			ops += 2 * l.inputs * l.outputs;
+		}
+	}
+	printf("Floating Point Operations: %ld\n", ops);
+}
+
+
 void partial(char *cfgfile, char *weightfile, char *outfile, int max)
 {
     gpu_index = -1;
@@ -243,66 +262,99 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if(0==strcmp(argv[1], "imagenet")){
-        run_imagenet(argc, argv);
-    } else if (0 == strcmp(argv[1], "average")){
-        average(argc, argv);
-    } else if (0 == strcmp(argv[1], "yolo")){
-        run_yolo(argc, argv);
-	} else if (0 == strcmp(argv[1], "cyolo")){
+	if (0 == strcmp(argv[1], "imagenet")){
+		run_imagenet(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "average")){
+		average(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "yolo")){
+		run_yolo(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "cyolo")){
 		run_cyolo(argc, argv);
 	}
 	else if (0 == strcmp(argv[1], "cifar")){
-        run_cifar(argc, argv);
-    } else if (0 == strcmp(argv[1], "go")){
-        run_go(argc, argv);
-    } else if (0 == strcmp(argv[1], "rnn")){
-        run_char_rnn(argc, argv);
-    } else if (0 == strcmp(argv[1], "vid")){
-        run_vid_rnn(argc, argv);
-    } else if (0 == strcmp(argv[1], "coco")){
-        run_coco(argc, argv);
-    } else if (0 == strcmp(argv[1], "classifier")){
-        run_classifier(argc, argv);
-    } else if (0 == strcmp(argv[1], "art")){
-        run_art(argc, argv);
-    } else if (0 == strcmp(argv[1], "tag")){
-        run_tag(argc, argv);
-    } else if (0 == strcmp(argv[1], "compare")){
-        run_compare(argc, argv);
-    } else if (0 == strcmp(argv[1], "dice")){
-        run_dice(argc, argv);
-    } else if (0 == strcmp(argv[1], "writing")){
-        run_writing(argc, argv);
-    } else if (0 == strcmp(argv[1], "3d")){
-        composite_3d(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "test")){
-        test_resize(argv[2]);
-    } else if (0 == strcmp(argv[1], "captcha")){
-        run_captcha(argc, argv);
-    } else if (0 == strcmp(argv[1], "nightmare")){
-        run_nightmare(argc, argv);
-    } else if (0 == strcmp(argv[1], "change")){
-        change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
-    } else if (0 == strcmp(argv[1], "rgbgr")){
-        rgbgr_net(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "denormalize")){
-        denormalize_net(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "normalize")){
-        normalize_net(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "rescale")){
-        rescale_net(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "partial")){
-        partial(argv[2], argv[3], argv[4], atoi(argv[5]));
-    } else if (0 == strcmp(argv[1], "stacked")){
-        stacked(argv[2], argv[3], argv[4]);
-    } else if (0 == strcmp(argv[1], "visualize")){
-        visualize(argv[2], (argc > 3) ? argv[3] : 0);
-    } else if (0 == strcmp(argv[1], "imtest")){
-        test_resize(argv[2]);
-    } else {
-        fprintf(stderr, "Not an option: %s\n", argv[1]);
-    }
-    return 0;
+		run_cifar(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "go")){
+		run_go(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "rnn")){
+		run_char_rnn(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "vid")){
+		run_vid_rnn(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "coco")){
+		run_coco(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "classifier")){
+		run_classifier(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "art")){
+		run_art(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "tag")){
+		run_tag(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "compare")){
+		run_compare(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "dice")){
+		run_dice(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "writing")){
+		run_writing(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "3d")){
+		composite_3d(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "test")){
+		test_resize(argv[2]);
+	}
+	else if (0 == strcmp(argv[1], "captcha")){
+		run_captcha(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "nightmare")){
+		run_nightmare(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "change")){
+		change_rate(argv[2], atof(argv[3]), (argc > 4) ? atof(argv[4]) : 0);
+	}
+	else if (0 == strcmp(argv[1], "rgbgr")){
+		rgbgr_net(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "denormalize")){
+		denormalize_net(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "normalize")){
+		normalize_net(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "rescale")){
+		rescale_net(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "ops")){
+		operations(argv[2]);
+	}
+	else if (0 == strcmp(argv[1], "partial")){
+		partial(argv[2], argv[3], argv[4], atoi(argv[5]));
+	}
+	else if (0 == strcmp(argv[1], "average")){
+		average(argc, argv);
+	}
+	else if (0 == strcmp(argv[1], "stacked")){
+		stacked(argv[2], argv[3], argv[4]);
+	}
+	else if (0 == strcmp(argv[1], "visualize")){
+		visualize(argv[2], (argc > 3) ? argv[3] : 0);
+	}
+	else if (0 == strcmp(argv[1], "imtest")){
+		test_resize(argv[2]);
+	}
+	else {
+		fprintf(stderr, "Not an option: %s\n", argv[1]);
+	}
+	return 0;
 }
 

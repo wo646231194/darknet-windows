@@ -2,9 +2,10 @@
 #define ACTIVATIONS_H
 #include "cuda.h"
 #include "math.h"
+#define inline __inline__
 
 typedef enum{
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN
 }ACTIVATION;
 
 ACTIVATION get_activation(char *s);
@@ -18,8 +19,6 @@ void activate_array(float *x, const int n, const ACTIVATION a);
 void activate_array_ongpu(float *x, int n, ACTIVATION a);
 void gradient_array_ongpu(float *x, int n, ACTIVATION a, float *delta);
 #endif
-
-#define inline __inline
 
 static inline float stair_activate(float x)
 {
@@ -47,6 +46,18 @@ static inline float plse_activate(float x)
     if(x < -4) return .01 * (x + 4);
     if(x > 4)  return .01 * (x - 4) + 1;
     return .125*x + .5;
+}
+
+static inline float lhtan_activate(float x)
+{
+    if(x < 0) return .001*x;
+    if(x > 1) return .001*(x-1) + 1;
+    return x;
+}
+static inline float lhtan_gradient(float x)
+{
+    if(x > 0 && x < 1) return 1;
+    return .001;
 }
 
 static inline float hardtan_gradient(float x)

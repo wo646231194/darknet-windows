@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>cyolo train E:\Experiment\YOLO\yolo_train\cfg\cyolo-small.cfg E:\Experiment\YOLO\yolo_train\backup\cyolo_700.weights E:\Experiment\YOLO\yolo_train\data\p1.jpg </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>yolo test E:\Experiment\YOLO\yolo_train\cfg\yolo-small.cfg E:\Experiment\YOLO\yolo_train\cfg\yolo-small.weights E:\Experiment\YOLO\yolo_train\data\p1.jpg </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

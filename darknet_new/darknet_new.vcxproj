@@ -30,7 +30,6 @@
     <ClCompile Include="src\cifar.c" />
     <ClCompile Include="src\classifier.c" />
     <ClCompile Include="src\coco.c" />
-    <ClCompile Include="src\coco_demo.c" />
     <ClCompile Include="src\col2im.c" />
     <ClCompile Include="src\compare.c" />
     <ClCompile Include="src\connected_layer.c" />
@@ -43,6 +42,7 @@
     <ClCompile Include="src\darknet.c" />
     <ClCompile Include="src\data.c" />
     <ClCompile Include="src\deconvolutional_layer.c" />
+    <ClCompile Include="src\demo.c" />
     <ClCompile Include="src\detection_layer.c" />
     <ClCompile Include="src\dice.c" />
     <ClCompile Include="src\dropout_layer.c" />
@@ -73,7 +73,6 @@
     <ClCompile Include="src\utils.c" />
     <ClCompile Include="src\writing.c" />
     <ClCompile Include="src\yolo.c" />
-    <ClCompile Include="src\yolo_demo.c" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\activation_kernels.cu" />
@@ -106,6 +105,7 @@
     <ClInclude Include="src\cuda.h" />
     <ClInclude Include="src\data.h" />
     <ClInclude Include="src\deconvolutional_layer.h" />
+    <ClInclude Include="src\demo.h" />
     <ClInclude Include="src\detection_layer.h" />
     <ClInclude Include="src\dropout_layer.h" />
     <ClInclude Include="src\gemm.h" />

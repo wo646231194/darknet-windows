@@ -71,7 +71,7 @@ void train_cyolo(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0 || (i < 1000 && i%100 == 0)){
+        if( i%100 == 0 ){
             char buff[256];
             sprintf(buff, "%s/cyolo_%d.weights", backup_directory, i);
             save_weights(net, buff);
@@ -360,8 +360,6 @@ void test_cyolo(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
-void demo_cyolo(char *cfgfile, char *weightfile, float thresh, int cam_index, char *filename);
-
 void run_cyolo(int argc, char **argv)
 {
     int i;
@@ -372,12 +370,13 @@ void run_cyolo(int argc, char **argv)
         voc_labels[i] = load_image_color(buff, 0, 0);
     }
 
-    float thresh = find_float_arg(argc, argv, "-thresh", .2);
-    int cam_index = find_int_arg(argc, argv, "-c", 0);
-    if(argc < 4){
-        fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
-        return;
-    }
+	float thresh = find_float_arg(argc, argv, "-thresh", .2);
+	int cam_index = find_int_arg(argc, argv, "-c", 0);
+	int frame_skip = find_int_arg(argc, argv, "-s", 0);
+	if (argc < 4){
+		fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
+		return;
+	}
 
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
@@ -386,5 +385,5 @@ void run_cyolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_cyolo(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_cyolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_cyolo_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index, filename);
+	else if (0 == strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, perdestrian_names, voc_labels, 1, frame_skip);
 }

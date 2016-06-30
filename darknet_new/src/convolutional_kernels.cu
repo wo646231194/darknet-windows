@@ -71,8 +71,6 @@ void binarize_filters_gpu(float *filters, int n, int size, float *binary)
 
 void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 {
-    int i;
-
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
     if(l.binary){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
@@ -82,9 +80,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     if(l.xnor){
         binarize_filters_gpu(l.filters_gpu, l.n, l.c*l.size*l.size, l.binary_filters_gpu);
         swap_binary(&l);
-        for(i = 0; i < l.batch; ++i){
-            binarize_input_gpu(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input_gpu + i*l.inputs);
-        }
+        binarize_gpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input_gpu);
         state.input = l.binary_input_gpu;
     }
 
@@ -105,6 +101,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 l.output_gpu);
 
 #else
+    int i;
     int m = l.n;
     int k = l.size*l.size*l.c;
     int n = l.out_w*l.out_h;

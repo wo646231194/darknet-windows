@@ -64,6 +64,7 @@ float get_current_rate(network net)
         case EXP:
             return net.learning_rate * pow(net.gamma, batch_num);
         case POLY:
+            if (batch_num < net.burn_in) return net.learning_rate * pow((float)batch_num / net.burn_in, net.power);
             return net.learning_rate * pow(1 - (float)batch_num / net.max_batches, net.power);
         case RANDOM:
             return net.learning_rate * pow(rand_uniform(0,1), net.power);
@@ -307,12 +308,11 @@ void backward_network(network net, network_state state)
 
 float train_network_datum(network net, float *x, float *y)
 {
-    *net.seen += net.batch;
 	network_state state;
+    *net.seen += net.batch;
 #ifdef GPU
     if(gpu_index >= 0) return train_network_datum_gpu(net, x, y);
 #endif
-    //network_state state;
     state.index = 0;
     state.net = net;
     state.input = x;
@@ -521,7 +521,6 @@ float *network_predict(network net, float *input)
     if(gpu_index >= 0)  return network_predict_gpu(net, input);
 #endif
 
-    //network_state state;
     state.net = net;
     state.index = 0;
     state.input = input;

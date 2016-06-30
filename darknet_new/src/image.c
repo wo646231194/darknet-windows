@@ -111,11 +111,11 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
         if(prob > thresh){
             int width = pow(prob, 1./2.)*10+1;
             width = 8;
-            printf("%s: %.2f\n", names[class], prob);
-            int offset = class*17 % classes;
-            float red = get_color(0,offset,classes);
+            printf("%s: %.0f%%\n", names[class], prob*100);
+            int offset = class*1 % classes;
+            float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
-            float blue = get_color(2,offset,classes);
+            float blue = get_color(0,offset,classes);
             float rgb[3];
             rgb[0] = red;
             rgb[1] = green;
@@ -365,6 +365,7 @@ void show_image_cv(image p, const char *name)
     image get_image_from_stream(CvCapture *cap)
     {
         IplImage* src = cvQueryFrame(cap);
+        if (!src) return make_empty_image(0,0,0);
         image im = ipl_to_image(src);
         rgbgr_image(im);
         return im;
@@ -537,11 +538,9 @@ int best_3d_shift(image a, image b, int min, int max)
 
 void composite_3d(char *f1, char *f2, char *out)
 {
-	image a = load_image(f1, 0, 0, 0);
-	image b = load_image(f2, 0, 0, 0);
     if(!out) out = "out";
-    //image a = load_image(f1, 0,0,0);
-    //image b = load_image(f2, 0,0,0);
+    image a = load_image(f1, 0,0,0);
+    image b = load_image(f2, 0,0,0);
     int shift = best_3d_shift_r(a, b, -a.h/100, a.h/100);
 
     image c1 = crop_image(b, 10, shift, b.w, b.h);
@@ -574,7 +573,6 @@ void composite_3d(char *f1, char *f2, char *out)
 
 image resize_min(image im, int min)
 {
-	image resized;
     int w = im.w;
     int h = im.h;
     if(w < h){
@@ -585,7 +583,7 @@ image resize_min(image im, int min)
         h = min;
     }
     if(w == im.w && h == im.h) return im;
-     resized = resize_image(im, w, h);
+    image resized = resize_image(im, w, h);
     return resized;
 }
 

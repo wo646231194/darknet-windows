@@ -14,7 +14,7 @@
 
 #ifndef AI2
 #define AI2 0
-void forward_xnor_layer(layer l, network_state state);
+//void forward_xnor_layer(layer l, network_state state);
 #endif
 
 void swap_binary(convolutional_layer *l)
@@ -42,6 +42,14 @@ void binarize_filters(float *filters, int n, int size, float *binary)
         for(i = 0; i < size; ++i){
             binary[f*size + i] = (filters[f*size + i] > 0) ? mean : -mean;
         }
+    }
+}
+
+void binarize_cpu(float *input, int n, float *binary)
+{
+    int i;
+    for(i = 0; i < n; ++i){
+        binary[i] = (input[i] > 0) ? 1 : -1;
     }
 }
 
@@ -426,12 +434,10 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
        }
      */
 
-    if(l.xnor && (l.c%32 != 0 || !AI2)){
+    if(l.xnor ){
         binarize_filters(l.filters, l.n, l.c*l.size*l.size, l.binary_filters);
         swap_binary(&l);
-        for(i = 0; i < l.batch; ++i){
-            binarize_input(state.input + i*l.inputs, l.c, l.h*l.w, l.binary_input + i*l.inputs);
-        }
+        binarize_cpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input);
         state.input = l.binary_input;
     }
 

@@ -98,6 +98,7 @@ typedef struct size_params{
 
 deconvolutional_layer parse_deconvolutional(list *options, size_params params)
 {
+	deconvolutional_layer layer;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
@@ -109,11 +110,9 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-
-	deconvolutional_layer layer;
     if(!(h && w && c)) error("Layer before deconvolutional layer must output image.");
 
-     layer = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
+    layer = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
 
     char *weights = option_find_str(options, "weights", 0);
     char *biases = option_find_str(options, "biases", 0);
@@ -127,6 +126,7 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
 
 local_layer parse_local(list *options, size_params params)
 {
+	local_layer layer;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
@@ -139,10 +139,9 @@ local_layer parse_local(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-	local_layer layer;
     if(!(h && w && c)) error("Layer before local layer must output image.");
 
-     layer = make_local_layer(batch,h,w,c,n,size,stride,pad,activation);
+    layer = make_local_layer(batch,h,w,c,n,size,stride,pad,activation);
 
     return layer;
 }
@@ -267,6 +266,7 @@ detection_layer parse_detection(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.jitter = option_find_float(options, "jitter", .2);
+    layer.random = option_find_int_quiet(options, "random", 0);
     return layer;
 }
 
@@ -305,6 +305,7 @@ crop_layer parse_crop(list *options, size_params params)
 
 maxpool_layer parse_maxpool(list *options, size_params params)
 {
+	maxpool_layer layer;
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
 
@@ -313,24 +314,23 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     w = params.w;
     c = params.c;
     batch=params.batch;
-	maxpool_layer layer;
     if(!(h && w && c)) error("Layer before maxpool layer must output image.");
 
-     layer = make_maxpool_layer(batch,h,w,c,size,stride);
+    layer = make_maxpool_layer(batch,h,w,c,size,stride);
     return layer;
 }
 
 avgpool_layer parse_avgpool(list *options, size_params params)
 {
+	avgpool_layer layer;
     int batch,w,h,c;
     w = params.w;
     h = params.h;
     c = params.c;
     batch=params.batch;
-	avgpool_layer layer;
     if(!(h && w && c)) error("Layer before avgpool layer must output image.");
 
-     layer = make_avgpool_layer(batch,w,h,c);
+    layer = make_avgpool_layer(batch,w,h,c);
     return layer;
 }
 
@@ -472,6 +472,7 @@ void parse_net_options(list *options, network *net)
 
     char *policy_s = option_find_str(options, "policy", "constant");
     net->policy = get_policy(policy_s);
+    net->burn_in = option_find_int_quiet(options, "burn_in", 0);
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
         net->scale = option_find_float(options, "scale", 1);
@@ -512,11 +513,11 @@ void parse_net_options(list *options, network *net)
 
 network parse_network_cfg(char *filename)
 {
+	network net;
     list *sections = read_cfg(filename);
     node *n = sections->front;
-	network net;
     if(!n) error("Config file has no sections");
-     net = make_network(sections->size - 1);
+    net = make_network(sections->size - 1);
     size_params params;
 
     section *s = (section *)n->val;
