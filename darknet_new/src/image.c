@@ -364,9 +364,10 @@ void show_image_cv(image p, const char *name)
 #ifdef OPENCV
     image get_image_from_stream(CvCapture *cap)
     {
+		image im;
         IplImage* src = cvQueryFrame(cap);
         if (!src) return make_empty_image(0,0,0);
-        image im = ipl_to_image(src);
+        im = ipl_to_image(src);
         rgbgr_image(im);
         return im;
     }
@@ -538,14 +539,15 @@ int best_3d_shift(image a, image b, int min, int max)
 
 void composite_3d(char *f1, char *f2, char *out)
 {
+	image a, b, c1, c2;
     if(!out) out = "out";
-    image a = load_image(f1, 0,0,0);
-    image b = load_image(f2, 0,0,0);
+    a = load_image(f1, 0,0,0);
+    b = load_image(f2, 0,0,0);
     int shift = best_3d_shift_r(a, b, -a.h/100, a.h/100);
 
-    image c1 = crop_image(b, 10, shift, b.w, b.h);
+    c1 = crop_image(b, 10, shift, b.w, b.h);
     float d1 = dist_array(c1.data, a.data, a.w*a.h*a.c, 100);
-    image c2 = crop_image(b, -10, shift, b.w, b.h);
+    c2 = crop_image(b, -10, shift, b.w, b.h);
     float d2 = dist_array(c2.data, a.data, a.w*a.h*a.c, 100);
 
     if(d2 < d1){
@@ -573,6 +575,7 @@ void composite_3d(char *f1, char *f2, char *out)
 
 image resize_min(image im, int min)
 {
+	image resized;
     int w = im.w;
     int h = im.h;
     if(w < h){
@@ -583,7 +586,7 @@ image resize_min(image im, int min)
         h = min;
     }
     if(w == im.w && h == im.h) return im;
-    image resized = resize_image(im, w, h);
+    resized = resize_image(im, w, h);
     return resized;
 }
 
