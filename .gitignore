@@ -7,3 +7,6 @@ darknet_new/x64/
 darknet_new.sdf
 darknet_new.v12.suo
 darknet_new/vc120.pdb
+*.png
+*.sdf
+*.opensdf
