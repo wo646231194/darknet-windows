@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "parser.h"
 #include "box.h"
+#include "demo.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
