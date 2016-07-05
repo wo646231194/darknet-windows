@@ -305,7 +305,7 @@ void show_image_cv(image p, const char *name)
 
     IplImage *disp = cvCreateImage(cvSize(p.w,p.h), IPL_DEPTH_8U, p.c);
     int step = disp->widthStep;
-    cvNamedWindow(buff, CV_WINDOW_NORMAL); 
+    cvNamedWindow(buff, CV_WINDOW_AUTOSIZE); 
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     ++windows;
     for(y = 0; y < p.h; ++y){

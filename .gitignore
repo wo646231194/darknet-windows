@@ -10,3 +10,4 @@ darknet_new/vc120.pdb
 *.png
 *.sdf
 *.opensdf
+*.list
