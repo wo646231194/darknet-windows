@@ -112,23 +112,12 @@ void convert_cyolo_detections(float *predictions, int classes, int num, int squa
     }
 }
 
-void print_cyolo_detections(FILE **fps, char *id, box *boxes, float **probs, int total, int classes, int w, int h)
+void print_cyolo_detections(FILE **fps, int id, box *boxes, float **probs, int total, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < total; ++i){
-        float xmin = boxes[i].x - boxes[i].w/2.;
-        float xmax = boxes[i].x + boxes[i].w/2.;
-        float ymin = boxes[i].y - boxes[i].h/2.;
-        float ymax = boxes[i].y + boxes[i].h/2.;
-
-        if (xmin < 0) xmin = 0;
-        if (ymin < 0) ymin = 0;
-        if (xmax > w) xmax = w;
-        if (ymax > h) ymax = h;
-
         for(j = 0; j < classes; ++j){
-            if (probs[i][j]) fprintf(fps[j], "%s %f %f %f %f %f\n", id, probs[i][j],
-                    xmin, ymin, xmax, ymax);
+			if (probs[i][j]) fprintf(fps[j], "%d %f %f %f %f %f\n", id, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h, probs[i][j]*100);
         }
     }
 }
@@ -143,9 +132,9 @@ void validate_cyolo(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     srand(time(0));
 
-    char *base = "results/comp4_det_test_";
+    char *base = "data/";
     //list *plist = get_paths("data/voc.2007.test");
-    list *plist = get_paths("/home/pjreddie/data/voc/2007_test.txt");
+    list *plist = get_paths("E:/Experiment/YOLO/yolo_train/VOCdevkit/Caltech/test.txt");
     //list *plist = get_paths("data/voc.2012.test");
     char **paths = (char **)list_to_array(plist);
 
@@ -214,7 +203,7 @@ void validate_cyolo(char *cfgfile, char *weightfile)
             int h = val[t].h;
             convert_cyolo_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
             if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
-            print_cyolo_detections(fps, id, boxes, probs, side*side*l.n, classes, w, h);
+            print_cyolo_detections(fps, (i+t-1), boxes, probs, side*side*l.n, classes, w, h);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
