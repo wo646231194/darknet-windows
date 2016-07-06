@@ -76,11 +76,11 @@ void *detect_in_thread(void *ptr)
 
 double get_wall_time()
 {
-	time_t stime;
-    if (time(&stime)){
-        return 0;
+	clock_t stime;
+    if (stime = clock()){
+		return (double)sec(stime);
     }
-	return (double)stime;
+	return 0;
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, image *labels, int classes, int frame_skip)
