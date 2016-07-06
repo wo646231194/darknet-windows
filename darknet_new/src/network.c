@@ -25,6 +25,7 @@
 #include "dropout_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
+#include "pyramid_layer.h"
 
 int get_current_batch(network net)
 {
@@ -117,6 +118,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "normalization";
         case BATCHNORM:
             return "batchnorm";
+        case PYRAMID:
+            return "pyramid";
         default:
             break;
     }
@@ -184,6 +187,8 @@ void forward_network(network net, network_state state)
             forward_route_layer(l, net);
         } else if(l.type == SHORTCUT){
             forward_shortcut_layer(l, state);
+        } else if (l.type == PYRAMID){
+            forward_pyramid_layer(l, state);
         }
         state.input = l.output;
     }
@@ -235,6 +240,10 @@ float get_network_cost(network net)
             ++count;
         }
         if(net.layers[i].type == DETECTION){
+            sum += net.layers[i].cost[0];
+            ++count;
+        }
+        if (net.layers[i].type == PYRAMID){
             sum += net.layers[i].cost[0];
             ++count;
         }
@@ -302,6 +311,8 @@ void backward_network(network net, network_state state)
             backward_route_layer(l, net);
         } else if(l.type == SHORTCUT){
             backward_shortcut_layer(l, state);
+        } else if (l.type == PYRAMID){
+            backward_pyramid_layer(l, state);
         }
     }
 }
@@ -468,6 +479,19 @@ detection_layer get_network_detection_layer(network net)
     }
     fprintf(stderr, "Detection layer not found!!\n");
     detection_layer l = {0};
+    return l;
+}
+
+pyramid_layer get_network_pyramid_layer(network net)
+{
+    int i;
+    for (i = 0; i < net.n; ++i){
+    if (net.layers[i].type == PYRAMID){
+            return net.layers[i];
+        }
+    }
+    fprintf(stderr, "Pyramid layer not found!!\n");
+    pyramid_layer l = { 0 };
     return l;
 }
 

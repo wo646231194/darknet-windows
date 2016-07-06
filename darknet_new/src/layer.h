@@ -29,7 +29,8 @@ typedef enum {
     BATCHNORM,
     NETWORK,
     XNOR,
-    BLANK
+    BLANK,
+    PYRAMID
 } LAYER_TYPE;
 
 typedef enum{

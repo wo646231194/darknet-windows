@@ -26,6 +26,7 @@
 #include "list.h"
 #include "option_list.h"
 #include "utils.h"
+#include "pyramid_layer.h"
 
 typedef struct{
     char *type;
@@ -52,6 +53,7 @@ int is_shortcut(section *s);
 int is_cost(section *s);
 int is_detection(section *s);
 int is_route(section *s);
+int is_pyramid(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -98,7 +100,7 @@ typedef struct size_params{
 
 deconvolutional_layer parse_deconvolutional(list *options, size_params params)
 {
-	deconvolutional_layer layer;
+    deconvolutional_layer layer;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
@@ -126,7 +128,7 @@ deconvolutional_layer parse_deconvolutional(list *options, size_params params)
 
 local_layer parse_local(list *options, size_params params)
 {
-	local_layer layer;
+    local_layer layer;
     int n = option_find_int(options, "filters",1);
     int size = option_find_int(options, "size",1);
     int stride = option_find_int(options, "stride",1);
@@ -270,6 +272,29 @@ detection_layer parse_detection(list *options, size_params params)
     return layer;
 }
 
+pyramid_layer parse_pyramid(list *options, size_params params)
+{
+    int coords = option_find_int(options, "coords", 1);
+    int classes = option_find_int(options, "classes", 1);
+    int rescore = option_find_int(options, "rescore", 0);
+    int num = option_find_int(options, "num", 1);
+    int side = option_find_int(options, "side", 7);
+    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
+
+    layer.softmax = option_find_int(options, "softmax", 0);
+    layer.sqrt = option_find_int(options, "sqrt", 0);
+
+    layer.max_boxes = option_find_int_quiet(options, "max", 30);
+    layer.coord_scale = option_find_float(options, "coord_scale", 1);
+    layer.forced = option_find_int(options, "forced", 0);
+    layer.object_scale = option_find_float(options, "object_scale", 1);
+    layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
+    layer.class_scale = option_find_float(options, "class_scale", 1);
+    layer.jitter = option_find_float(options, "jitter", .2);
+    layer.random = option_find_int_quiet(options, "random", 0);
+    return layer;
+}
+
 cost_layer parse_cost(list *options, size_params params)
 {
     char *type_s = option_find_str(options, "type", "sse");
@@ -305,7 +330,7 @@ crop_layer parse_crop(list *options, size_params params)
 
 maxpool_layer parse_maxpool(list *options, size_params params)
 {
-	maxpool_layer layer;
+    maxpool_layer layer;
     int stride = option_find_int(options, "stride",1);
     int size = option_find_int(options, "size",stride);
 
@@ -322,7 +347,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
 
 avgpool_layer parse_avgpool(list *options, size_params params)
 {
-	avgpool_layer layer;
+    avgpool_layer layer;
     int batch,w,h,c;
     w = params.w;
     h = params.h;
@@ -513,7 +538,7 @@ void parse_net_options(list *options, network *net)
 
 network parse_network_cfg(char *filename)
 {
-	network net;
+    network net;
     list *sections = read_cfg(filename);
     node *n = sections->front;
     if(!n) error("Config file has no sections");
@@ -586,6 +611,8 @@ network parse_network_cfg(char *filename)
             l.output_gpu = net.layers[count-1].output_gpu;
             l.delta_gpu = net.layers[count-1].delta_gpu;
 #endif
+        }else if (is_pyramid(s)){
+            l = parse_pyramid(options, params);
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
@@ -649,6 +676,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[soft]")==0
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
+    if (strcmp(type, "[pyramid]") == 0) return PYRAMID;
     return BLANK;
 }
 
@@ -667,6 +695,10 @@ int is_cost(section *s)
 int is_detection(section *s)
 {
     return (strcmp(s->type, "[detection]")==0);
+}
+int is_pyramid(section *s)
+{
+    return (strcmp(s->type, "[pyramid]") == 0);
 }
 int is_local(section *s)
 {

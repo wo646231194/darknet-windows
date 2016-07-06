@@ -33,6 +33,7 @@ extern "C" {
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "blas.h"
+#include "pyramid_layer.h"
 }
 
 float * get_network_output_gpu_layer(network net, int i);
@@ -87,6 +88,8 @@ void forward_network_gpu(network net, network_state state)
             forward_route_layer_gpu(l, net);
         } else if(l.type == SHORTCUT){
             forward_shortcut_layer_gpu(l, state);
+        } else if (l.type == PYRAMID){
+            forward_pyramid_layer_gpu(l, state);
         }
         state.input = l.output_gpu;
     }
@@ -145,6 +148,8 @@ void backward_network_gpu(network net, network_state state)
             backward_route_layer_gpu(l, net);
         } else if(l.type == SHORTCUT){
             backward_shortcut_layer_gpu(l, state);
+        } else if (l.type == PYRAMID){
+            backward_pyramid_layer_gpu(l, state);
         }
     }
 }
@@ -182,6 +187,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
     int x_size = get_network_input_size(net)*net.batch;
     int y_size = get_network_output_size(net)*net.batch;
     if(net.layers[net.n-1].type == DETECTION) y_size = net.layers[net.n-1].truths*net.batch;
+    if (net.layers[net.n - 1].type == PYRAMID) y_size = net.layers[net.n - 1].truths*net.batch;
     if(!*net.input_gpu){
         *net.input_gpu = cuda_make_array(x, x_size);
         *net.truth_gpu = cuda_make_array(y, y_size);

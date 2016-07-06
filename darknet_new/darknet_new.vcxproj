@@ -62,6 +62,7 @@
     <ClCompile Include="src\normalization_layer.c" />
     <ClCompile Include="src\option_list.c" />
     <ClCompile Include="src\parser.c" />
+    <ClCompile Include="src\pyramid_layer.c" />
     <ClCompile Include="src\rnn.c" />
     <ClCompile Include="src\rnn_layer.c" />
     <ClCompile Include="src\rnn_vid.c" />
@@ -121,6 +122,7 @@
     <ClInclude Include="src\normalization_layer.h" />
     <ClInclude Include="src\option_list.h" />
     <ClInclude Include="src\parser.h" />
+    <ClInclude Include="src\pyramid_layer.h" />
     <ClInclude Include="src\rnn_layer.h" />
     <ClInclude Include="src\route_layer.h" />
     <ClInclude Include="src\server.h" />
