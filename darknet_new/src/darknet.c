@@ -14,7 +14,7 @@
 
 extern void run_imagenet(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
-extern void run_cyolo(int argc, char **argv);
+//extern void run_cyolo(int argc, char **argv);
 extern void run_coco(int argc, char **argv);
 extern void run_writing(int argc, char **argv);
 extern void run_captcha(int argc, char **argv);
@@ -28,6 +28,7 @@ extern void run_tag(int argc, char **argv);
 extern void run_cifar(int argc, char **argv);
 extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
+extern void run_pyramid(int argc, char **argv);
 
 void change_rate(char *filename, float scale, float add)
 {
@@ -271,9 +272,9 @@ int main(int argc, char **argv)
 	else if (0 == strcmp(argv[1], "yolo")){
 		run_yolo(argc, argv);
 	}
-	else if (0 == strcmp(argv[1], "cyolo")){
+	/*else if (0 == strcmp(argv[1], "cyolo")){
 		run_cyolo(argc, argv);
-	}
+	}*/
 	else if (0 == strcmp(argv[1], "cifar")){
 		run_cifar(argc, argv);
 	}
@@ -351,6 +352,9 @@ int main(int argc, char **argv)
 	}
 	else if (0 == strcmp(argv[1], "imtest")){
 		test_resize(argv[2]);
+	}
+	else if (0 == strcmp(argv[1], "pyramid")){
+		run_pyramid(argc, argv);
 	}
 	else {
 		fprintf(stderr, "Not an option: %s\n", argv[1]);

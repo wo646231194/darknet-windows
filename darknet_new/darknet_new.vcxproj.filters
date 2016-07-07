@@ -168,13 +168,13 @@
     <ClCompile Include="src\art.c">
       <Filter>c</Filter>
     </ClCompile>
-    <ClCompile Include="src\cyolo.c">
-      <Filter>c</Filter>
-    </ClCompile>
     <ClCompile Include="src\demo.c">
       <Filter>c</Filter>
     </ClCompile>
     <ClCompile Include="src\pyramid_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pyramid.c">
       <Filter>c</Filter>
     </ClCompile>
   </ItemGroup>

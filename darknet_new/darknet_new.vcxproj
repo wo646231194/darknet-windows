@@ -38,7 +38,6 @@
     <ClCompile Include="src\crnn_layer.c" />
     <ClCompile Include="src\crop_layer.c" />
     <ClCompile Include="src\cuda.c" />
-    <ClCompile Include="src\cyolo.c" />
     <ClCompile Include="src\darknet.c" />
     <ClCompile Include="src\data.c" />
     <ClCompile Include="src\deconvolutional_layer.c" />
@@ -62,6 +61,7 @@
     <ClCompile Include="src\normalization_layer.c" />
     <ClCompile Include="src\option_list.c" />
     <ClCompile Include="src\parser.c" />
+    <ClCompile Include="src\pyramid.c" />
     <ClCompile Include="src\pyramid_layer.c" />
     <ClCompile Include="src\rnn.c" />
     <ClCompile Include="src\rnn_layer.c" />
