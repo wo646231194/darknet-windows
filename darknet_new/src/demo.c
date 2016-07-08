@@ -142,7 +142,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
     int count = 0;
-    cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+    cvNamedWindow("Demo", CV_WINDOW_AUTOSIZE); 
     cvMoveWindow("Demo", 0, 0);
     cvResizeWindow("Demo", 1352, 1013);
 
