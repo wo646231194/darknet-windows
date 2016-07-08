@@ -80,6 +80,7 @@ struct layer{
     int does_cost;
     int joint;
     int noadjust;
+    int level;
 
     float alpha;
     float beta;

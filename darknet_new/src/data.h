@@ -32,7 +32,7 @@ typedef struct{
 } data;
 
 typedef enum {
-    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA
+    CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, PYRAMID_DATA
 } data_type;
 
 typedef struct load_args{
@@ -73,6 +73,7 @@ data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
 data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h);
 data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter);
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter);
 data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size);
 data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size);
 data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size);

@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int side, int classes, int coords, int rescore)
+pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int classes, int coords, int rescore)
 {
     pyramid_layer l = {0};
     l.type = PYRAMID;
@@ -21,11 +21,14 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int side, int cla
     l.classes = classes;
     l.coords = coords;
     l.rescore = rescore;
-    l.side = side;
-    assert(side*side*((1 + l.coords)*l.n + l.classes) == inputs);
+    l.level = level;
+    assert( pow(2,2*level) <= inputs/1024);
+    l.truths = 0;
+    for (int i = 0; i < level; i++){
+        l.truths += pow(2, 2 * i);
+    }
     l.cost = calloc(1, sizeof(float));
-    l.outputs = l.inputs;
-    l.truths = l.side*l.side*(1+l.coords+l.classes);
+    l.outputs = l.truths * (classes + coords)* n;
     l.output = calloc(batch*l.outputs, sizeof(float));
     l.delta = calloc(batch*l.outputs, sizeof(float));
 #ifdef GPU
@@ -33,7 +36,7 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int side, int cla
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
 
-	fprintf(stderr, "Pyramid Layer: output %d = %d * %d *( %d * (x,y,w,h,s) + %d classes)  pyramid\n", l.inputs, l.side, l.side, l.n, l.classes);
+    fprintf(stderr, "Pyramid Layer: output %d , pyramid level %d , per area %d * (x,y,w,h,s) box\n", l.truths * (classes + coords)* n, l.level, l.n);
     srand(0);
 
     return l;

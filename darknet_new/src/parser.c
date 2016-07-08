@@ -278,8 +278,8 @@ pyramid_layer parse_pyramid(list *options, size_params params)
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 0);
     int num = option_find_int(options, "num", 1);
-    int side = option_find_int(options, "side", 7);
-    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, side, classes, coords, rescore);
+    int level = option_find_int(options, "level", 4);
+    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, rescore);
 
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
@@ -290,7 +290,6 @@ pyramid_layer parse_pyramid(list *options, size_params params)
     layer.object_scale = option_find_float(options, "object_scale", 1);
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
-    layer.jitter = option_find_float(options, "jitter", .2);
     layer.random = option_find_int_quiet(options, "random", 0);
     return layer;
 }

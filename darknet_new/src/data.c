@@ -494,6 +494,60 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     return d;
 }
 
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int size, int classes, float jitter)
+{
+    char **random_paths = get_random_paths(paths, n, m);
+    int i;
+    data d = { 0 };
+    d.shallow = 0;
+
+    d.X.rows = n;
+    d.X.vals = calloc(d.X.rows, sizeof(float*));
+    d.X.cols = h*w * 3;
+
+
+    int k = size*size*(5 + classes);
+    d.y = make_matrix(n, k);
+    srand((unsigned int)time(0));
+    for (i = 0; i < n; ++i){
+        image orig = load_image_color(random_paths[i], 0, 0);
+
+        int oh = orig.h;
+        int ow = orig.w;
+
+        int dw = (ow*jitter);
+        int dh = (oh*jitter);
+
+        int pleft = rand_uniform(-dw, dw);
+        int pright = rand_uniform(-dw, dw);
+        int ptop = rand_uniform(-dh, dh);
+        int pbot = rand_uniform(-dh, dh);
+
+        int swidth = ow - pleft - pright;
+        int sheight = oh - ptop - pbot;
+
+        float sx = (float)swidth / ow;
+        float sy = (float)sheight / oh;
+
+        int flip = rand() % 2;
+        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
+
+        float dx = ((float)pleft / ow) / sx;
+        float dy = ((float)ptop / oh) / sy;
+
+        image sized = resize_image(cropped, w, h);
+        if (flip) flip_image(sized);
+        d.X.vals[i] = sized.data;
+
+        fill_truth_region(random_paths[i], d.y.vals[i], classes, size, flip, dx, dy, 1. / sx, 1. / sy);
+
+        free_image(orig);
+        free_image(cropped);
+    }
+    free(random_paths);
+    return d;
+}
+
 data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
 {
     if(m) paths = get_random_paths(paths, 2*n, m);
@@ -696,6 +750,8 @@ void *load_thread(void *ptr)
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size);
         //*a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
+    } else if (a.type == PYRAMID_DATA){
+        *a.d = load_data_pyramid(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter);
     }
     free(ptr);
     return 0;
