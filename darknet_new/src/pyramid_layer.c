@@ -22,7 +22,7 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     l.coords = coords;
     l.rescore = rescore;
     l.level = level;
-    assert( pow(2,2*level) <= inputs/1024);
+    //assert( pow(2,2*level) <= inputs/1024);
     l.truths = 0;
     for (int i = 0; i < level; i++){
         l.truths += pow(2, 2 * i);

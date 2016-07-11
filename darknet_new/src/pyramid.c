@@ -34,9 +34,8 @@ void train_pyramid(char *cfgfile, char *weightfile)
 
     layer l = net.layers[net.n - 1];
 
-    int side = l.side;
+    int level = l.level;
     int classes = l.classes;
-    float jitter = l.jitter;
 
     list *plist = get_paths(train_images);
     //int N = plist->size;
@@ -49,10 +48,9 @@ void train_pyramid(char *cfgfile, char *weightfile)
     args.n = imgs;
     args.m = plist->size;
     args.classes = classes;
-    args.jitter = jitter;
-    args.num_boxes = side;
+    args.level = level;
     args.d = &buffer;
-    args.type = REGION_DATA;
+    args.type = PYRAMID_DATA;
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;

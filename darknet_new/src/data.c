@@ -276,6 +276,72 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
+int get_pyramid_level(int level, float width){
+    float v = 1.0;
+    int i;
+    for (i = 0; i < level; i++){
+        v = v / 2;
+        if (width>=v) return i;
+    }
+}
+
+int get_pyramid_index(int level, float x, float y){
+    int sum = 0, num = pow(2, level);
+    for (int i = 0; i < level; i++){
+        sum += pow(2, 2*i);
+    }
+    int row = floor(x*num);
+    int col = floor(y*num);
+    return (sum + row*num + col);
+}
+
+void fill_truth_pyramid(char *path, float *truth, int classes, int level, int flip)
+{
+    char *labelpath = find_replace(path, "images", "labels");
+    labelpath = find_replace(labelpath, "JPEGImages", "labels");
+
+    labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPG", ".txt");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    int count = 0;
+    box_label *boxes = read_boxes(labelpath, &count);
+    randomize_boxes(boxes, count);
+    correct_boxes(boxes, count, 0, 0, 1, 1, flip);
+    float x, y, w, h, cx, cy;
+    int id;
+    int i, j, index;
+
+    for (i = 0; i < count; ++i) {
+        x = boxes[i].x;
+        y = boxes[i].y;
+        w = boxes[i].w;
+        h = boxes[i].h;
+        id = boxes[i].id;
+        cx = boxes[i].x + boxes[i].w / 2;
+        cy = boxes[i].y + boxes[i].h / 2;
+
+        if (w < .01 || h < .01) continue;
+        j = get_pyramid_level(level, h);
+
+        int num = pow(2, j);
+        x = cx*num - floor(cx*num) - 0.5;
+        y = cy*num - floor(cy*num) - 0.5;
+        w = w - 1 / (2 * num);
+        h = h - 1 / (2 * num);
+
+        index = get_pyramid_index(j, cx, cy);
+
+        if (truth[index]) continue;
+
+        truth[index * 5 + 0] = 1;
+        truth[index * 5 + 1] = x;
+        truth[index * 5 + 2] = y;
+        truth[index * 5 + 3] = w;
+        truth[index * 5 + 4] = h;
+    }
+    free(boxes);
+}
+
 void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy)
 {
     char *labelpath = find_replace(path, "images", "labels");
@@ -494,7 +560,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     return d;
 }
 
-data load_data_pyramid(int n, char **paths, int m, int w, int h, int size, int classes, float jitter)
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int classes)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i;
@@ -505,8 +571,11 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int size, int c
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w * 3;
 
-
-    int k = size*size*(5 + classes);
+    int k = 0;
+    for (int i = 0; i < level; i++){
+        k += pow(2, 2 * i);
+    }
+    k *= 5;
     d.y = make_matrix(n, k);
     srand((unsigned int)time(0));
     for (i = 0; i < n; ++i){
@@ -515,34 +584,16 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int size, int c
         int oh = orig.h;
         int ow = orig.w;
 
-        int dw = (ow*jitter);
-        int dh = (oh*jitter);
-
-        int pleft = rand_uniform(-dw, dw);
-        int pright = rand_uniform(-dw, dw);
-        int ptop = rand_uniform(-dh, dh);
-        int pbot = rand_uniform(-dh, dh);
-
-        int swidth = ow - pleft - pright;
-        int sheight = oh - ptop - pbot;
-
-        float sx = (float)swidth / ow;
-        float sy = (float)sheight / oh;
-
         int flip = rand() % 2;
-        image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
-        float dx = ((float)pleft / ow) / sx;
-        float dy = ((float)ptop / oh) / sy;
-
-        image sized = resize_image(cropped, w, h);
+        image sized = resize_image(orig, w, h);
         if (flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_region(random_paths[i], d.y.vals[i], classes, size, flip, dx, dy, 1. / sx, 1. / sy);
+        fill_truth_pyramid(random_paths[i], d.y.vals[i], classes, level, flip);
 
         free_image(orig);
-        free_image(cropped);
+        free_image(sized);
     }
     free(random_paths);
     return d;
@@ -751,7 +802,7 @@ void *load_thread(void *ptr)
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size);
         //*a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == PYRAMID_DATA){
-        *a.d = load_data_pyramid(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter);
+        *a.d = load_data_pyramid(a.n, a.paths, a.m, a.w, a.h, a.level, a.classes);
     }
     free(ptr);
     return 0;
