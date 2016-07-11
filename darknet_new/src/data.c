@@ -593,7 +593,6 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
         fill_truth_pyramid(random_paths[i], d.y.vals[i], classes, level, flip);
 
         free_image(orig);
-        free_image(sized);
     }
     free(random_paths);
     return d;
