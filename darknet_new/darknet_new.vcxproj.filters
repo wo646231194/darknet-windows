@@ -177,6 +177,9 @@
     <ClCompile Include="src\pyramid.c">
       <Filter>c</Filter>
     </ClCompile>
+    <ClCompile Include="src\pyramidpool_layer.c">
+      <Filter>c</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\convolutional_kernels.cu">
@@ -344,6 +347,9 @@
       <Filter>h</Filter>
     </ClInclude>
     <ClInclude Include="src\pyramid_layer.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pyramidpool_layer.h">
       <Filter>h</Filter>
     </ClInclude>
   </ItemGroup>
