@@ -27,8 +27,9 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     for (int i = 0; i < level; i++){
         l.truths += pow(2, 2 * i);
     }
+    l.truths = l.truths * (classes + coords);
     l.cost = calloc(1, sizeof(float));
-    l.outputs = l.truths * (classes + coords)* n;
+    l.outputs = l.truths * n;
     l.output = calloc(batch*l.outputs, sizeof(float));
     l.delta = calloc(batch*l.outputs, sizeof(float));
 #ifdef GPU
@@ -48,16 +49,6 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state)
     int i,j;
     memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
     int b;
-    if (l.softmax){
-        for(b = 0; b < l.batch; ++b){
-            int index = b*l.inputs;
-            for (i = 0; i < locations; ++i) {
-                int offset = i*l.classes;
-                softmax_array(l.output + index + offset, l.classes, 1,
-                        l.output + index + offset);
-            }
-        }
-    }
     if(state.train){
         float avg_iou = 0;
         float avg_cat = 0;
@@ -227,7 +218,7 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state)
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
-        int num_truth = l.batch*l.side*l.side*(1+l.coords+l.classes);
+        int num_truth = l.truths ;
         truth_cpu = calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }

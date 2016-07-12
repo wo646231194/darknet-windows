@@ -34,6 +34,7 @@ extern "C" {
 #include "shortcut_layer.h"
 #include "blas.h"
 #include "pyramid_layer.h"
+#include "pyramidpool_layer.h"
 }
 
 float * get_network_output_gpu_layer(network net, int i);
@@ -90,6 +91,8 @@ void forward_network_gpu(network net, network_state state)
             forward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
             forward_pyramid_layer_gpu(l, state);
+        } else if (l.type == PYRAMIDPOOL){
+            forward_pyramidpool_layer_gpu(l, state, i);
         }
         state.input = l.output_gpu;
     }
@@ -150,6 +153,8 @@ void backward_network_gpu(network net, network_state state)
             backward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
             backward_pyramid_layer_gpu(l, state);
+        } else if (l.type == PYRAMIDPOOL){
+            backward_pyramidpool_layer_gpu(l, state);
         }
     }
 }
