@@ -27,6 +27,7 @@
 #include "option_list.h"
 #include "utils.h"
 #include "pyramid_layer.h"
+#include "pyramidpool_layer.h"
 
 typedef struct{
     char *type;
@@ -54,6 +55,7 @@ int is_cost(section *s);
 int is_detection(section *s);
 int is_route(section *s);
 int is_pyramid(section *s);
+int is_pyramidpool(section *s);
 list *read_cfg(char *filename);
 
 void free_section(section *s)
@@ -277,7 +279,7 @@ pyramid_layer parse_pyramid(list *options, size_params params)
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
     int rescore = option_find_int(options, "rescore", 0);
-    int num = option_find_int(options, "num", 1);
+    int num = option_find_int(options, "num", 4);
     int level = option_find_int(options, "level", 4);
     pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, rescore);
 
@@ -291,6 +293,23 @@ pyramid_layer parse_pyramid(list *options, size_params params)
     layer.noobject_scale = option_find_float(options, "noobject_scale", 1);
     layer.class_scale = option_find_float(options, "class_scale", 1);
     layer.random = option_find_int_quiet(options, "random", 0);
+    return layer;
+}
+
+pyramidpool_layer parse_pyramidpool(list *options, size_params params)
+{
+    pyramidpool_layer layer;
+    int level = option_find_int(options, "level", 2);
+    int size = option_find_int(options, "size", 2);
+
+    int batch, h, w, c;
+    h = params.h;
+    w = params.w;
+    c = params.c;
+    batch = params.batch;
+    if (!(h && w && c)) error("Layer before pyramidpool layer must output image.");
+
+    layer = make_pyramidpool_layer(batch, h, w, c, level, size);
     return layer;
 }
 
@@ -612,6 +631,8 @@ network parse_network_cfg(char *filename)
 #endif
         }else if (is_pyramid(s)){
             l = parse_pyramid(options, params);
+        }else if (is_pyramidpool(s)){
+            l = parse_pyramidpool(options, params);
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
@@ -676,6 +697,7 @@ LAYER_TYPE string_to_layer_type(char * type)
             || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[pyramid]") == 0) return PYRAMID;
+    if (strcmp(type, "[pyramidpool]") == 0) return PYRAMIDPOOL;
     return BLANK;
 }
 
@@ -698,6 +720,10 @@ int is_detection(section *s)
 int is_pyramid(section *s)
 {
     return (strcmp(s->type, "[pyramid]") == 0);
+}
+int is_pyramidpool(section *s)
+{
+    return (strcmp(s->type, "[pyramidpool]") == 0);
 }
 int is_local(section *s)
 {

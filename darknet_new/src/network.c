@@ -26,6 +26,7 @@
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "pyramid_layer.h"
+#include "pyramidpool_layer.h"
 
 int get_current_batch(network net)
 {
@@ -120,6 +121,8 @@ char *get_layer_string(LAYER_TYPE a)
             return "batchnorm";
         case PYRAMID:
             return "pyramid";
+        case PYRAMIDPOOL:
+            return "pyramidpool";
         default:
             break;
     }
@@ -189,6 +192,8 @@ void forward_network(network net, network_state state)
             forward_shortcut_layer(l, state);
         } else if (l.type == PYRAMID){
             forward_pyramid_layer(l, state);
+        } else if (l.type == PYRAMIDPOOL){
+            //forward_pyramidpool_layer(l, state);
         }
         state.input = l.output;
     }
@@ -313,6 +318,8 @@ void backward_network(network net, network_state state)
             backward_shortcut_layer(l, state);
         } else if (l.type == PYRAMID){
             backward_pyramid_layer(l, state);
+        } else if (l.type == PYRAMIDPOOL){
+            backward_pyramidpool_layer(l, state);
         }
     }
 }

@@ -30,7 +30,8 @@ typedef enum {
     NETWORK,
     XNOR,
     BLANK,
-    PYRAMID
+    PYRAMID,
+    PYRAMIDPOOL
 } LAYER_TYPE;
 
 typedef enum{
