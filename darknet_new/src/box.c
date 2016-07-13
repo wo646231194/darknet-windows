@@ -104,6 +104,12 @@ float box_rmse(box a, box b)
                 pow(a.h-b.h, 2));
 }
 
+float box_loss_l1(box a, box b){
+    float sum = 0;
+    sum += abs(a.x - b.x) + abs(a.y - b.y) + abs(a.w - b.w) + abs(a.h - b.h);
+    return sum;
+}
+
 dbox dintersect(box a, box b)
 {
     float w = overlap(a.x, a.w, b.x, b.w);
