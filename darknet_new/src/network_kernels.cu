@@ -90,9 +90,66 @@ void forward_network_gpu(network net, network_state state)
         } else if(l.type == SHORTCUT){
             forward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
-            forward_pyramid_layer_gpu(l, state);
+            forward_pyramid_layer_gpu(l, state, 0);
         } else if (l.type == PYRAMIDPOOL){
             forward_pyramidpool_layer_gpu(l, state, i);
+            break;
+        }
+        state.input = l.output_gpu;
+    }
+}
+
+void forward_network_pyramid_gpu(network net, network_state state, int now, int index){
+    int i;
+    for (i = now; i < net.n; ++i){
+        state.index = i;
+        layer l = state.net.layers[i];
+        if (l.delta_gpu){
+            fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+        }
+        if (l.type == CONVOLUTIONAL){
+            forward_convolutional_layer_gpu(l, state);
+        } else if (l.type == DECONVOLUTIONAL){
+            forward_deconvolutional_layer_gpu(l, state);
+        } else if (l.type == ACTIVE){
+            forward_activation_layer_gpu(l, state);
+        } else if (l.type == LOCAL){
+            forward_local_layer_gpu(l, state);
+        } else if (l.type == DETECTION){
+            forward_detection_layer_gpu(l, state);
+        } else if (l.type == CONNECTED){
+            forward_connected_layer_gpu(l, state);
+        } else if (l.type == RNN){
+            forward_rnn_layer_gpu(l, state);
+        } else if (l.type == GRU){
+            forward_gru_layer_gpu(l, state);
+        } else if (l.type == CRNN){
+            forward_crnn_layer_gpu(l, state);
+        } else if (l.type == CROP){
+            forward_crop_layer_gpu(l, state);
+        } else if (l.type == COST){
+            forward_cost_layer_gpu(l, state);
+        } else if (l.type == SOFTMAX){
+            forward_softmax_layer_gpu(l, state);
+        } else if (l.type == NORMALIZATION){
+            forward_normalization_layer_gpu(l, state);
+        } else if (l.type == BATCHNORM){
+            forward_batchnorm_layer_gpu(l, state);
+        } else if (l.type == MAXPOOL){
+            forward_maxpool_layer_gpu(l, state);
+        } else if (l.type == AVGPOOL){
+            forward_avgpool_layer_gpu(l, state);
+        } else if (l.type == DROPOUT){
+            forward_dropout_layer_gpu(l, state);
+        } else if (l.type == ROUTE){
+            forward_route_layer_gpu(l, net);
+        } else if (l.type == SHORTCUT){
+            forward_shortcut_layer_gpu(l, state);
+        } else if (l.type == PYRAMID){
+            forward_pyramid_layer_gpu(l, state, index);
+        } else if (l.type == PYRAMIDPOOL){
+            forward_pyramidpool_layer_gpu(l, state, i);
+            break;
         }
         state.input = l.output_gpu;
     }
@@ -150,6 +207,66 @@ void backward_network_gpu(network net, network_state state)
         } else if(l.type == ROUTE){
             backward_route_layer_gpu(l, net);
         } else if(l.type == SHORTCUT){
+            backward_shortcut_layer_gpu(l, state);
+        } else if (l.type == PYRAMID){
+            backward_pyramid_layer_gpu(l, state);
+        } else if (l.type == PYRAMIDPOOL){
+            backward_pyramidpool_layer_gpu(l, state);
+        }
+    }
+}
+
+void backward_network_pyramid_gpu(network net, network_state state, int end)
+{
+    int i;
+    float * original_input = state.input;
+    float * original_delta = state.delta;
+    for (i = net.n - 1; i >= end; --i){
+        state.index = i;
+        layer l = net.layers[i];
+        if (i == end){
+            state.input = original_input;
+            state.delta = original_delta;
+        }else{
+            layer prev = net.layers[i - 1];
+            state.input = prev.output_gpu;
+            state.delta = prev.delta_gpu;
+        }
+        if (l.type == CONVOLUTIONAL){
+            backward_convolutional_layer_gpu(l, state);
+        } else if (l.type == DECONVOLUTIONAL){
+            backward_deconvolutional_layer_gpu(l, state);
+        } else if (l.type == ACTIVE){
+            backward_activation_layer_gpu(l, state);
+        } else if (l.type == LOCAL){
+            backward_local_layer_gpu(l, state);
+        } else if (l.type == MAXPOOL){
+            if (i != 0) backward_maxpool_layer_gpu(l, state);
+        } else if (l.type == AVGPOOL){
+            if (i != 0) backward_avgpool_layer_gpu(l, state);
+        } else if (l.type == DROPOUT){
+            backward_dropout_layer_gpu(l, state);
+        } else if (l.type == DETECTION){
+            backward_detection_layer_gpu(l, state);
+        } else if (l.type == NORMALIZATION){
+            backward_normalization_layer_gpu(l, state);
+        } else if (l.type == BATCHNORM){
+            backward_batchnorm_layer_gpu(l, state);
+        } else if (l.type == SOFTMAX){
+            if (i != 0) backward_softmax_layer_gpu(l, state);
+        } else if (l.type == CONNECTED){
+            backward_connected_layer_gpu(l, state);
+        } else if (l.type == RNN){
+            backward_rnn_layer_gpu(l, state);
+        } else if (l.type == GRU){
+            backward_gru_layer_gpu(l, state);
+        } else if (l.type == CRNN){
+            backward_crnn_layer_gpu(l, state);
+        } else if (l.type == COST){
+            backward_cost_layer_gpu(l, state);
+        } else if (l.type == ROUTE){
+            backward_route_layer_gpu(l, net);
+        } else if (l.type == SHORTCUT){
             backward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
             backward_pyramid_layer_gpu(l, state);
