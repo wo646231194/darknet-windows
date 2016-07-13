@@ -73,18 +73,25 @@ void resize_pyramidpool_layer(pyramidpool_layer *l, int w, int h)
     #endif
 }
 
-void forward_pyramidpool_layer(const pyramidpool_layer l,const convolutional_layer lc, network_state state, int now)
+int get_truth_index(int level, int size, int x, int y)
 {
+    int i,index=0;
+    for (i = 0; i < level; i++){
+        index += pow(2, 2 * i);
+    }
+    index += x / size *pow(2, level) + y / size;
+    return index * 5;
+}
+
+void forward_pyramidpool_layer(float * incpu, layer l,const convolutional_layer lc, network_state state, int now)
+{    
     int b,i,j,k,m,n;
 
-    int h = lc.out_h;
-    int w = lc.out_w;
-    int c = lc.out_c;
+    int h = l.h;
+    int w = l.w;
+    int c = l.c;
     int level = sqrt(h)-1;
     state.index = now;
-    layer connect = state.net.layers[now];
-    layer dropout = state.net.layers[now + 1];
-    layer pyramid = state.net.layers[now + 2];
 
     for(b = 0; b < lc.batch; ++b){
         for(i = 0; i < h; i+=l.size){
@@ -95,17 +102,15 @@ void forward_pyramidpool_layer(const pyramidpool_layer l,const convolutional_lay
                         for(m = 0; m < l.size; ++m){
                             int out = n*l.size + m + k*(l.size*l.size);
                             int in = in_index + n*l.size + m;
-                            l.output[out] = state.input[in];
+                            l.output[out] = incpu[in];
                         }
                     }
                 }
+                int truth_index = get_truth_index(level, l.size, i, j);
                 cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
                 state.input = l.output_gpu;
-                forward_connected_layer_gpu(connect, state);
-                state.input = connect.output_gpu;
-                forward_dropout_layer_gpu(dropout, state);
-                state.input = dropout.output_gpu;
-                forward_pyramid_layer_gpu(pyramid, state);
+                forward_network_pyramid_gpu(state.net, state, now , truth_index);
+                backward_network_pyramid_gpu(state.net, state, now);
             }
         }
     }
@@ -126,23 +131,54 @@ void backward_pyramidpool_layer(const pyramidpool_layer l, network_state state)
 #ifdef GPU
 
 void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int i)
-{    
+{
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.input = in_cpu;
     layer lc = state.net.layers[i - 1];
+    layer layer = l;
     for (int j = 0; j < l.level; j++){
-        forward_pyramidpool_layer(l, lc, cpu_state, i+1);
-        cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-        cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
-        free(cpu_state.input);
+        forward_pyramidpool_layer(in_cpu, layer, lc, cpu_state, i+1);
+        state.input = layer.output_gpu;
+        layer = make_maxpool_layer(l.batch, l.h, l.w, l.c, l.size, l.size);
+        forward_maxpool_layer_gpu(layer, state);
+        state.input = layer.output_gpu;
+        cuda_pull_array(state.input, in_cpu, layer.batch*layer.outputs);
     }
+    free(cpu_state.input);
 }
 
 void backward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state){
+    int i;
+    constrain_ongpu(l.outputs*l.batch, 5, l.delta_gpu, 1);
+    gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
+    for (i = 0; i < l.batch; ++i){
+        axpy_ongpu(l.outputs, 1, l.delta_gpu + i*l.outputs, 1, l.bias_updates_gpu, 1);
+    }
 
+    if (l.batch_normalize){
+        backward_batchnorm_layer_gpu(l, state);
+    }
+
+    int m = l.outputs;
+    int k = l.batch;
+    int n = l.inputs;
+    float * a = l.delta_gpu;
+    float * b = state.input;
+    float * c = l.weight_updates_gpu;
+    gemm_ongpu(1, 0, m, n, k, 1, a, m, b, n, 1, c, n);
+
+    m = l.batch;
+    k = l.outputs;
+    n = l.inputs;
+
+    a = l.delta_gpu;
+    b = l.weights_gpu;
+    c = state.delta;
+
+    if (c) gemm_ongpu(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
 }
 
 #endif

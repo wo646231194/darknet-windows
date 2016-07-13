@@ -37,23 +37,22 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
 
-    fprintf(stderr, "Pyramid Layer: output %d , pyramid level %d , per area %d * (x,y,w,h,s) box\n", l.truths * (classes + coords)* n, l.level, l.n);
+    fprintf(stderr, "Pyramid Layer: output %d , pyramid level %d , per area %d * (x,y,w,h,s) box\n", l.truths * n, l.level, l.n);
     srand(0);
 
     return l;
 }
 
-void forward_pyramid_layer(const pyramid_layer l, network_state state)
+void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth_index)
 {
-    int locations = l.side*l.side;
     int i,j;
     memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
     int b;
     if(state.train){
-        float avg_iou = 0;
+        float avg_loc = 0;
         float avg_cat = 0;
         float avg_allcat = 0;
-        float avg_obj = 0;
+        float avg_conf = 0;
         float avg_anyobj = 0;
         int count = 0;
         *(l.cost) = 0;
@@ -61,143 +60,84 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state)
         memset(l.delta, 0, size * sizeof(float));
         for (b = 0; b < l.batch; ++b){
             int index = b*l.inputs;
-            for (i = 0; i < locations; ++i) {
-                int truth_index = (b*locations + i)*(1+l.coords+l.classes);
-                int is_obj = state.truth[truth_index];
-                for (j = 0; j < l.n; ++j) {
-                    int p_index = index + locations*l.classes + i*l.n + j;
-                    l.delta[p_index] = l.noobject_scale*(0 - l.output[p_index]);
-                    *(l.cost) += l.noobject_scale*pow(l.output[p_index], 2);
-                    avg_anyobj += l.output[p_index];
-                }
+            int is_obj = state.truth[truth_index];
 
-                int best_index = -1;
-                float best_iou = 0;
-                float best_rmse = 20;
+            for (j = 0; j < l.n; ++j) {
+                int p_index = index + j*(l.rescore + l.coords);
+                l.delta[p_index] = l.noobject_scale*(0 - l.output[p_index]);
+                *(l.cost) += l.noobject_scale*pow(l.output[p_index], 2);
+                avg_anyobj += l.output[p_index];
+            }
 
-                if (!is_obj){
-                    continue;
-                }
+            int best_index = -1;
+            float best_iou = 0;
+            float best_rmse = INFINITY;
 
-                int class_index = index + i*l.classes;
-                for(j = 0; j < l.classes; ++j) {
-                    l.delta[class_index+j] = l.class_scale * (state.truth[truth_index+1+j] - l.output[class_index+j]);
-                    *(l.cost) += l.class_scale * pow(state.truth[truth_index+1+j] - l.output[class_index+j], 2);
-                    if(state.truth[truth_index + 1 + j]) avg_cat += l.output[class_index+j];
-                    avg_allcat += l.output[class_index+j];
-                }
+            if (!is_obj){
+                continue;
+            }
 
-                box truth = float_to_box(state.truth + truth_index + 1 + l.classes);
-                truth.x /= l.side;
-                truth.y /= l.side;
+            for (j = 0; j < l.n; ++j) {
+                int p_index = index + j*(l.rescore + l.coords);
+                l.delta[p_index] = l.object_scale*(1 - l.output[p_index]);
+                *(l.cost) += l.object_scale*pow(l.output[p_index], 2);
+                avg_conf += l.output[p_index];
+            }
 
-                for(j = 0; j < l.n; ++j){
-                    int box_index = index + locations*(l.classes + l.n) + (i*l.n + j) * l.coords;
-                    box out = float_to_box(l.output + box_index);
-                    out.x /= l.side;
-                    out.y /= l.side;
+            box truth = float_to_box(state.truth + truth_index + 1 );
 
-                    if (l.sqrt){
-                        out.w = out.w*out.w;
-                        out.h = out.h*out.h;
-                    }
-
-                    float iou  = box_iou(out, truth);
-                    //iou = 0;
-                    float rmse = box_rmse(out, truth);
-                    if(best_iou > 0 || iou > 0){
-                        if(iou > best_iou){
-                            best_iou = iou;
-                            best_index = j;
-                        }
-                    }else{
-                        if(rmse < best_rmse){
-                            best_rmse = rmse;
-                            best_index = j;
-                        }
-                    }
-                }
-
-                if(l.forced){
-                    if(truth.w*truth.h < .1){
-                        best_index = 1;
-                    }else{
-                        best_index = 0;
-                    }
-                }
-                if(l.random && *(state.net.seen) < 64000){
-                    best_index = rand()%l.n;
-                }
-
-                int box_index = index + locations*(l.classes + l.n) + (i*l.n + best_index) * l.coords;
-                int tbox_index = truth_index + 1 + l.classes;
-
+            for(j = 0; j < l.n; ++j){
+                int box_index = index + j*(l.rescore + l.coords)+1;
                 box out = float_to_box(l.output + box_index);
-                out.x /= l.side;
-                out.y /= l.side;
-                if (l.sqrt) {
-                    out.w = out.w*out.w;
-                    out.h = out.h*out.h;
+
+                float rmse = box_loss_l1(out, truth);
+                if(rmse < best_rmse){
+                    best_rmse = rmse;
+                    best_index = j;
                 }
-                float iou  = box_iou(out, truth);
-
-                //printf("%d,", best_index);
-                int p_index = index + locations*l.classes + i*l.n + best_index;
-                *(l.cost) -= l.noobject_scale * pow(l.output[p_index], 2);
-                *(l.cost) += l.object_scale * pow(1-l.output[p_index], 2);
-                avg_obj += l.output[p_index];
-                l.delta[p_index] = l.object_scale * (1.-l.output[p_index]);
-
-                if(l.rescore){
-                    l.delta[p_index] = l.object_scale * (iou - l.output[p_index]);
-                }
-
-                l.delta[box_index+0] = l.coord_scale*(state.truth[tbox_index + 0] - l.output[box_index + 0]);
-                l.delta[box_index+1] = l.coord_scale*(state.truth[tbox_index + 1] - l.output[box_index + 1]);
-                l.delta[box_index+2] = l.coord_scale*(state.truth[tbox_index + 2] - l.output[box_index + 2]);
-                l.delta[box_index+3] = l.coord_scale*(state.truth[tbox_index + 3] - l.output[box_index + 3]);
-                if(l.sqrt){
-                    l.delta[box_index+2] = l.coord_scale*(sqrt(state.truth[tbox_index + 2]) - l.output[box_index + 2]);
-                    l.delta[box_index+3] = l.coord_scale*(sqrt(state.truth[tbox_index + 3]) - l.output[box_index + 3]);
-                }
-
-                *(l.cost) += pow(1-iou, 2);
-                avg_iou += iou;
-                ++count;
             }
+
+            if(l.random && *(state.net.seen) < 64000){
+                best_index = rand()%l.n;
+            }
+
+            int box_index = index + best_index * (l.rescore + l.coords) + 1 ;
+            box out = float_to_box(l.output + box_index);
+            if (l.sqrt) {
+                out.w = out.w*out.w;
+                out.h = out.h*out.h;
+            }
+            float loss_l1  = box_loss_l1(out, truth);
+
+            //printf("%d,", best_index);
+            *(l.cost) -= l.noobject_scale * pow(l.output[box_index], 2);
+            *(l.cost) += l.object_scale * pow(1 - l.output[box_index], 2);
+            avg_conf += l.output[box_index];
+            l.delta[box_index] = l.object_scale * (1. - l.output[box_index]);
+
+            if(l.rescore){
+                //l.delta[p_index] = l.object_scale * (iou - l.output[p_index]);
+            }
+
+            l.delta[box_index + 0] = l.coord_scale*(state.truth[truth_index + 0] - l.output[box_index + 0]);
+            l.delta[box_index + 1] = l.coord_scale*(state.truth[truth_index + 1] - l.output[box_index + 1]);
+            l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - l.output[box_index + 2]);
+            l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - l.output[box_index + 3]);
+            if(l.sqrt){
+                l.delta[box_index + 2] = l.coord_scale*(sqrt(state.truth[truth_index + 2]) - l.output[box_index + 2]);
+                l.delta[box_index + 3] = l.coord_scale*(sqrt(state.truth[truth_index + 3]) - l.output[box_index + 3]);
+            }
+
+            *(l.cost) += loss_l1;
+            avg_conf += loss_l1;
+            ++count;
         }
-
-        if(0){
-            float *costs = calloc(l.batch*locations*l.n, sizeof(float));
-            for (b = 0; b < l.batch; ++b) {
-                int index = b*l.inputs;
-                for (i = 0; i < locations; ++i) {
-                    for (j = 0; j < l.n; ++j) {
-                        int p_index = index + locations*l.classes + i*l.n + j;
-                        costs[b*locations*l.n + i*l.n + j] = l.delta[p_index]*l.delta[p_index];
-                    }
-                }
-            }
-            int indexes[100];
-            top_k(costs, l.batch*locations*l.n, 100, indexes);
-            float cutoff = costs[indexes[99]];
-            for (b = 0; b < l.batch; ++b) {
-                int index = b*l.inputs;
-                for (i = 0; i < locations; ++i) {
-                    for (j = 0; j < l.n; ++j) {
-                        int p_index = index + locations*l.classes + i*l.n + j;
-                        if (l.delta[p_index]*l.delta[p_index] < cutoff) l.delta[p_index] = 0;
-                    }
-                }
-            }
-            free(costs);
-        }
-
 
         *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
 
-
-        printf("Pyramid Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou/count, avg_cat/count, avg_allcat/(count*l.classes), avg_obj/count, avg_anyobj/(l.batch*locations*l.n), count);
+        if (truth_index == 0){
+            //printf("Pyramid Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou / count, avg_cat / count, avg_allcat / (count*l.classes), avg_obj / count, avg_anyobj / (l.batch*l.n), count);
+        }
     }
 }
 
@@ -208,7 +148,7 @@ void backward_pyramid_layer(const pyramid_layer l, network_state state)
 
 #ifdef GPU
 
-void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state)
+void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int truth_index)
 {
     if(!state.train){
         copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
@@ -227,7 +167,7 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state)
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;
-    forward_pyramid_layer(l, cpu_state);
+    forward_pyramid_layer(l, cpu_state, truth_index);
     cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     free(cpu_state.input);

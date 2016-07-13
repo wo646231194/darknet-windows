@@ -7,11 +7,11 @@
 typedef layer pyramid_layer;
 
 pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int size, int classes, int coords, int rescore);
-void forward_pyramid_layer(const pyramid_layer l, network_state state);
+void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth_index);
 void backward_pyramid_layer(const pyramid_layer l, network_state state);
 
 #ifdef GPU
-void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state);
+void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int truth_index);
 void backward_pyramid_layer_gpu(pyramid_layer l, network_state state);
 #endif
 
