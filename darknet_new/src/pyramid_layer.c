@@ -46,7 +46,7 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
 void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth_index)
 {
     int i,j;
-    memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
+    //memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
     int b;
     if(state.train){
         float avg_loc = 0;

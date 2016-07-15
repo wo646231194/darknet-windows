@@ -86,11 +86,24 @@ int get_truth_index(int level, int size, int x, int y)
 void forward_pyramidpool_layer(float * incpu, layer l,const convolutional_layer lc, network_state state, int now)
 {    
     int b,i,j,k,m,n;
+    int h, w, c, th, level=0;
 
-    int h = l.h;
-    int w = l.w;
-    int c = l.c;
-    int level = sqrt(h)-1;
+    if (l.type == PYRAMIDPOOL){
+        h = l.h;
+        w = l.w;
+        c = l.c;
+    } else{
+        h = l.out_h;
+        w = l.out_w;
+        c = l.out_c;
+    }
+
+    th = h/2;
+    while (th>1){
+        th /= 2;
+        level++;
+    }
+    
     state.index = now;
 
     for(b = 0; b < lc.batch; ++b){
@@ -142,7 +155,11 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
     for (int j = 0; j < l.level; j++){
         forward_pyramidpool_layer(in_cpu, layer, lc, cpu_state, i+1);
         state.input = layer.output_gpu;
-        layer = make_maxpool_layer(l.batch, l.h, l.w, l.c, l.size, l.size);
+        if (layer.type == PYRAMIDPOOL){
+            layer = make_maxpool_layer(l.batch, layer.h, layer.w, layer.c, l.size, l.size);
+        } else{
+            layer = make_maxpool_layer(l.batch, layer.out_h, layer.out_w, layer.out_c, l.size, l.size);
+        }
         forward_maxpool_layer_gpu(layer, state);
         state.input = layer.output_gpu;
         cuda_pull_array(state.input, in_cpu, layer.batch*layer.outputs);
