@@ -64,7 +64,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
 
             if (!is_obj){
                 for (j = 0; j < l.n; ++j) {
-                    int p_index = index + j*(l.rescore + l.coords);
+                    int p_index = index + j*(1 + l.coords);
                     float h_theta_x = 1 / (1 + exp(state.input[p_index]));
                     l.delta[p_index] = l.noobject_scale*(0 - state.input[p_index]);
                     *(l.cost) -= log(1 - h_theta_x);
@@ -79,7 +79,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             float best_rmse = INFINITY;
 
             for (j = 0; j < l.n; ++j) {
-                int p_index = index + j*(l.rescore + l.coords);
+                int p_index = index + j*(1 + l.coords);
                 float h_theta_x = 1 / (1 + exp(state.input[p_index]));
                 l.delta[p_index] = l.object_scale*(1 - state.input[p_index]);
                 *(l.cost) -= log(h_theta_x);
@@ -89,7 +89,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             box truth = float_to_box(state.truth + truth_index + 1 );
 
             for(j = 0; j < l.n; ++j){
-                int box_index = index + j*(l.rescore + l.coords)+1;
+                int box_index = index + j*(1 + l.coords)+1;
                 box out = float_to_box(state.input + box_index);
 
                 float rmse = box_smooth_loss_l1(out, truth);
@@ -103,7 +103,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                 best_index = rand()%l.n;
             }
 
-            int box_index = index + best_index * (l.rescore + l.coords) + 1 ;
+            int box_index = index + best_index * (1 + l.coords) + 1 ;
             box out = float_to_box(state.input + box_index);
             if (l.sqrt) {
                 out.w = out.w*out.w;
