@@ -110,6 +110,24 @@ float box_loss_l1(box a, box b){
     return sum;
 }
 
+float smooth_l1(float x){
+    if (abs(x) < 1){
+        return 0.5*x*x;
+    }
+    else{
+        return abs(x) - 0.5;
+    }
+}
+
+float box_smooth_loss_l1(box a, box b){
+    float sum = 0;
+    sum += smooth_l1(a.x - b.x);
+    sum += smooth_l1(a.y - b.y);
+    sum += smooth_l1(a.w - b.w);
+    sum += smooth_l1(a.h - b.h);
+    return sum;
+}
+
 dbox dintersect(box a, box b)
 {
     float w = overlap(a.x, a.w, b.x, b.w);
