@@ -164,6 +164,12 @@ void backward_network_gpu(network net, network_state state)
     for(i = net.n-1; i >= 0; --i){
         state.index = i;
         layer l = net.layers[i];
+        if (l.type == PYRAMID){
+            l = net.layers[--i];
+            while (l.type != PYRAMIDPOOL){
+                l = net.layers[--i];
+            }
+        }
         if(i == 0){
             state.input = original_input;
             state.delta = original_delta;
@@ -224,14 +230,10 @@ void backward_network_pyramid_gpu(network net, network_state state, int end)
     for (i = net.n - 1; i >= end; --i){
         state.index = i;
         layer l = net.layers[i];
-        if (i == end){
-            state.input = original_input;
-            state.delta = original_delta;
-        }else{
-            layer prev = net.layers[i - 1];
-            state.input = prev.output_gpu;
-            state.delta = prev.delta_gpu;
-        }
+        layer prev = net.layers[i - 1];
+        state.input = prev.output_gpu;
+        state.delta = prev.delta_gpu;
+
         if (l.type == CONVOLUTIONAL){
             backward_convolutional_layer_gpu(l, state);
         } else if (l.type == DECONVOLUTIONAL){
