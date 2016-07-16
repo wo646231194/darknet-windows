@@ -47,6 +47,37 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     return l;
 }
 
+maxpool_layer make_maxpool_layer_show(int batch, int h, int w, int c, int size, int stride, int show)
+{
+    //fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d size, %d stride\n", h,w,c,size,stride);
+    maxpool_layer l = { 0 };
+    l.type = MAXPOOL;
+    l.batch = batch;
+    l.h = h;
+    l.w = w;
+    l.c = c;
+    l.out_w = (w - 1) / stride + 1;
+    l.out_h = (h - 1) / stride + 1;
+    l.out_c = c;
+    l.outputs = l.out_h * l.out_w * l.out_c;
+    l.inputs = h*w*c;
+    l.size = size;
+    l.stride = stride;
+    int output_size = l.out_h * l.out_w * l.out_c * batch;
+    l.indexes = calloc(output_size, sizeof(int));
+    l.output = calloc(output_size, sizeof(float));
+    l.delta = calloc(output_size, sizeof(float));
+#ifdef GPU
+    l.indexes_gpu = cuda_make_int_array(output_size);
+    l.output_gpu = cuda_make_array(l.output, output_size);
+    l.delta_gpu = cuda_make_array(l.delta, output_size);
+#endif
+    if (show){
+        fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d size, %d stride -> %d x %d x %d image\n", h, w, c, size, stride, l.out_h, l.out_w, l.out_c);
+    }
+    return l;
+}
+
 void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 {
     int stride = l->stride;
