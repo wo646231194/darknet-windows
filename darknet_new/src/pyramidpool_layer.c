@@ -84,7 +84,7 @@ int get_truth_index(int level, int size, int x, int y)
 }
 
 void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta)
-{    
+{
     int b,i,j,k,m,n;
     int h, w, c, th, level=0, in, out;
 
@@ -105,57 +105,39 @@ void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, net
     }
     
     state.index = now;
-
+    srand((unsigned int)time(0));
     for(b = 0; b < l.batch; ++b){
-        for(i = 0; i < h; i+=py.size){
-            for(j = 0; j < w; j+=py.size){
-                for (k = 0; k < c; ++k){
-                    int in_index = j + w*(i + h*(k + c*b));
-                    for(n = 0; n < py.size; ++n){
-                        for(m = 0; m < py.size; ++m){
-                            out = n*py.size + m + k*(py.size*py.size);
-                            in = in_index + n*l.w + m;
-                            l.output[out] = incpu[in];
-                        }
+        i = rand() * py.size % h;
+        j = rand() * py.size % h;
+        for (k = 0; k < c; ++k){
+            int in_index = j + w*(i + h*(k + c*b));
+            for(n = 0; n < py.size; ++n){
+                for(m = 0; m < py.size; ++m){
+                    out = n*py.size + m + k*(py.size*py.size);
+                    in = in_index + n*l.w + m;
+                    l.output[out] = incpu[in];
+                }
+            }
+        }
+        int truth_index = get_truth_index(level, l.size, i, j);
+        cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+        state.input = l.output_gpu;
+        forward_network_pyramid_gpu(state.net, state, now , truth_index);
+        backward_network_pyramid_gpu(state.net, state, now);
+        if (l.level > 0){
+            cuda_pull_array(py.delta_gpu, py.delta, py.batch*py.outputs);
+            for (k = 0; k < c; ++k){
+                int in_index = j + w*(i + h*(k + c*b));
+                for (n = 0; n < py.size; ++n){
+                    for (m = 0; m < py.size; ++m){
+                        out = n*py.size + m + k*(py.size*py.size);
+                        in = in_index + n*l.w + m;
+                        delta[in] = py.delta[out];
                     }
                 }
-                int truth_index = get_truth_index(level, l.size, i, j);
-                cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-                state.input = l.output_gpu;
-                forward_network_pyramid_gpu(state.net, state, now , truth_index);
-                backward_network_pyramid_gpu(state.net, state, now);
-                if (l.level > 0){
-                    cuda_pull_array(py.delta_gpu, py.delta, py.batch*py.outputs);
-                    for (k = 0; k < c; ++k){
-                        int in_index = j + w*(i + h*(k + c*b));
-                        for (n = 0; n < py.size; ++n){
-                            for (m = 0; m < py.size; ++m){
-                                out = n*py.size + m + k*(py.size*py.size);
-                                in = in_index + n*l.w + m;
-                                //delta[in] = py.delta[out];
-                            }
-                        }
-                    }
-                }
-                /*else{
-                    for (k = 0; k < c; ++k){
-                        int in_index = j + w*(i + h*(k + c*b));
-                        for (n = 0; n < py.size; ++n){
-                            for (m = 0; m < py.size; ++m){
-                                out = n*py.size + m + k*(py.size*py.size);
-                                int stride = pow(2, (py.level - level - 1));
-                                in = (in_index + n*py.w + m) * stride;
-                                for (int t = 0; t < stride; t++){
-                                    delta[in++] += py.delta[out]/stride;
-                                }
-                            }
-                        }
-                    }
-                }*/
             }
         }
     }
-    int ttt = 0;
 }
 
 void backward_pyramidpool_layer(const pyramidpool_layer l, network_state state)
@@ -176,6 +158,9 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
 {
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *delta_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    int num_truth = state.net.layers[state.net.n - 1].truths;
+    float *truth_cpu = calloc(num_truth, sizeof(float));
+    cuda_pull_array(state.truth, truth_cpu, num_truth);
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     network_state cpu_state = state;
     cpu_state.train = state.train;
@@ -199,34 +184,7 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
 }
 
 void backward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state){
-    int i;
-    constrain_ongpu(l.outputs*l.batch, 5, l.delta_gpu, 1);
-    gradient_array_ongpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
-    for (i = 0; i < l.batch; ++i){
-        axpy_ongpu(l.outputs, 1, l.delta_gpu + i*l.outputs, 1, l.bias_updates_gpu, 1);
-    }
-
-    if (l.batch_normalize){
-        backward_batchnorm_layer_gpu(l, state);
-    }
-
-    int m = l.outputs;
-    int k = l.batch;
-    int n = l.inputs;
-    float * a = l.delta_gpu;
-    float * b = state.input;
-    float * c = l.weight_updates_gpu;
-    gemm_ongpu(1, 0, m, n, k, 1, a, m, b, n, 1, c, n);
-
-    m = l.batch;
-    k = l.outputs;
-    n = l.inputs;
-
-    a = l.delta_gpu;
-    b = l.weights_gpu;
-    c = state.delta;
-
-    if (c) gemm_ongpu(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
+    axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
 }
 
 #endif

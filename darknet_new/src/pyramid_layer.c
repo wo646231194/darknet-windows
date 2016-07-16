@@ -65,12 +65,11 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             if (!is_obj){
                 for (j = 0; j < l.n; ++j) {
                     int p_index = index + j*(1 + l.coords);
-                    float h_theta_x = 1 / (1 + exp(state.input[p_index]));
-                    l.delta[p_index] = l.noobject_scale*(0 - state.input[p_index]);
-                    *(l.cost) -= log(1 - h_theta_x);
-                    conf_loss += h_theta_x;
+                    float h_theta_x = 1 / (1 + exp(-state.input[p_index]));
+                    l.delta[p_index] = l.noobject_scale*(0 - h_theta_x);
+                    conf_loss -= log(1 - h_theta_x);
                 }
-                printf("Pyramid loss ->   %f\n", *l.cost);
+                printf("Pyramid loss ->   %f\n", conf_loss);
                 continue;
             }
 
@@ -80,10 +79,9 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
 
             for (j = 0; j < l.n; ++j) {
                 int p_index = index + j*(1 + l.coords);
-                float h_theta_x = 1 / (1 + exp(state.input[p_index]));
-                l.delta[p_index] = l.object_scale*(1 - state.input[p_index]);
-                *(l.cost) -= log(h_theta_x);
-                conf_loss += h_theta_x;
+                float h_theta_x = 1 / (1 + exp(-state.input[p_index]));
+                l.delta[p_index] = l.object_scale*(1 - h_theta_x);
+                conf_loss -= log(h_theta_x);
             }
 
             box truth = float_to_box(state.truth + truth_index + 1 );
