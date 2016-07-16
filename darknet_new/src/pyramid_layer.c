@@ -50,11 +50,11 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
     int b;
     if(state.train){
         float avg_loc = 0;
-        float avg_cat = 0;
-        float avg_allcat = 0;
         float avg_conf = 0;
         float avg_anyobj = 0;
-        int count = 0;
+        float avg_cat = 0;
+        float avg_allcat = 0;
+        float conf_loss = 0;
         *(l.cost) = 0;
         int size = l.inputs * l.batch;
         memset(l.delta, 0, size * sizeof(float));
@@ -62,35 +62,37 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             int index = b*l.inputs;
             int is_obj = state.truth[truth_index];
 
-            for (j = 0; j < l.n; ++j) {
-                int p_index = index + j*(l.rescore + l.coords);
-                l.delta[p_index] = l.noobject_scale*(0 - l.output[p_index]);
-                *(l.cost) += l.noobject_scale*pow(l.output[p_index], 2);
-                avg_anyobj += l.output[p_index];
+            if (!is_obj){
+                for (j = 0; j < l.n; ++j) {
+                    int p_index = index + j*(l.rescore + l.coords);
+                    float h_theta_x = 1 / (1 + exp(state.input[p_index]));
+                    l.delta[p_index] = l.noobject_scale*(0 - state.input[p_index]);
+                    *(l.cost) -= log(1 - h_theta_x);
+                    conf_loss += h_theta_x;
+                }
+                printf("Pyramid loss ->   %f\n", *l.cost);
+                continue;
             }
 
             int best_index = -1;
             float best_iou = 0;
             float best_rmse = INFINITY;
 
-            if (!is_obj){
-                continue;
-            }
-
             for (j = 0; j < l.n; ++j) {
                 int p_index = index + j*(l.rescore + l.coords);
-                l.delta[p_index] = l.object_scale*(1 - l.output[p_index]);
-                *(l.cost) += l.object_scale*pow(l.output[p_index], 2);
-                avg_conf += l.output[p_index];
+                float h_theta_x = 1 / (1 + exp(state.input[p_index]));
+                l.delta[p_index] = l.object_scale*(1 - state.input[p_index]);
+                *(l.cost) -= log(h_theta_x);
+                conf_loss += h_theta_x;
             }
 
             box truth = float_to_box(state.truth + truth_index + 1 );
 
             for(j = 0; j < l.n; ++j){
                 int box_index = index + j*(l.rescore + l.coords)+1;
-                box out = float_to_box(l.output + box_index);
+                box out = float_to_box(state.input + box_index);
 
-                float rmse = box_loss_l1(out, truth);
+                float rmse = box_smooth_loss_l1(out, truth);
                 if(rmse < best_rmse){
                     best_rmse = rmse;
                     best_index = j;
@@ -102,38 +104,25 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             }
 
             int box_index = index + best_index * (l.rescore + l.coords) + 1 ;
-            box out = float_to_box(l.output + box_index);
+            box out = float_to_box(state.input + box_index);
             if (l.sqrt) {
                 out.w = out.w*out.w;
                 out.h = out.h*out.h;
             }
-            float loss_l1  = box_loss_l1(out, truth);
+            float loss_l1 = box_smooth_loss_l1(out, truth);
 
             //printf("%d,", best_index);
-            *(l.cost) -= l.noobject_scale * pow(l.output[box_index], 2);
-            *(l.cost) += l.object_scale * pow(1 - l.output[box_index], 2);
-            avg_conf += l.output[box_index];
-            l.delta[box_index] = l.object_scale * (1. - l.output[box_index]);
+            *(l.cost) += conf_loss + l.coord_scale * loss_l1;
 
-            if(l.rescore){
-                //l.delta[p_index] = l.object_scale * (iou - l.output[p_index]);
-            }
+            l.delta[box_index + 0] = l.coord_scale*(state.truth[truth_index + 0] - state.input[box_index + 0]);
+            l.delta[box_index + 1] = l.coord_scale*(state.truth[truth_index + 1] - state.input[box_index + 1]);
+            l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - state.input[box_index + 2]);
+            l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - state.input[box_index + 3]);
 
-            l.delta[box_index + 0] = l.coord_scale*(state.truth[truth_index + 0] - l.output[box_index + 0]);
-            l.delta[box_index + 1] = l.coord_scale*(state.truth[truth_index + 1] - l.output[box_index + 1]);
-            l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - l.output[box_index + 2]);
-            l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - l.output[box_index + 3]);
-            if(l.sqrt){
-                l.delta[box_index + 2] = l.coord_scale*(sqrt(state.truth[truth_index + 2]) - l.output[box_index + 2]);
-                l.delta[box_index + 3] = l.coord_scale*(sqrt(state.truth[truth_index + 3]) - l.output[box_index + 3]);
-            }
-
-            *(l.cost) += loss_l1;
-            avg_conf += loss_l1;
-            ++count;
+            printf("Pyramid loss -> 1 %f\n", *l.cost);
         }
 
-        *(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
+        //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
 
         if (truth_index == 0){
             //printf("Pyramid Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou / count, avg_cat / count, avg_allcat / (count*l.classes), avg_obj / count, avg_anyobj / (l.batch*l.n), count);

@@ -152,13 +152,13 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
     cpu_state.input = in_cpu;
     layer lc = state.net.layers[i - 1];
     layer layer = l;
-    for (int j = 0; j < l.level; j++){
+    for (int j = 1; j < l.level; j++){
         forward_pyramidpool_layer(in_cpu, layer, lc, cpu_state, i+1);
         state.input = layer.output_gpu;
         if (layer.type == PYRAMIDPOOL){
-            layer = make_maxpool_layer(l.batch, layer.h, layer.w, layer.c, l.size, l.size);
+            layer = make_maxpool_layer_show(l.batch, layer.h, layer.w, layer.c, l.size, l.size, 0);
         } else{
-            layer = make_maxpool_layer(l.batch, layer.out_h, layer.out_w, layer.out_c, l.size, l.size);
+            layer = make_maxpool_layer_show(l.batch, layer.out_h, layer.out_w, layer.out_c, l.size, l.size, 0);
         }
         forward_maxpool_layer_gpu(layer, state);
         state.input = layer.output_gpu;
