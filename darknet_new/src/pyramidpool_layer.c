@@ -83,7 +83,33 @@ int get_truth_index(int level, int size, int x, int y)
     return index * 5;
 }
 
-void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta)
+int truth_to_level(int n, int index, int *x, int *y){
+    int sum = 0;
+    for (int i = 0; i < n; i++){
+        sum += pow(2, 2 * i);
+        if (index < sum * 5) {
+            sum -= pow(2, 2 * i);
+            int in = index / 5 - sum;
+            int col = pow(2, i);
+            *x = in / col;
+            *y = in % col;
+            return i;
+        }
+    }
+}
+
+void get_truth_xy(float *truth, int *num_truth, int *truth_x, int *truth_y, int *level, int n){
+    int num = 0;
+    for (int i = 0; i < *num_truth; i+=5){
+        if (truth[i]){
+            level[num] = truth_to_level(n, i, &truth_x[num], &truth_y[num]);
+            num++;
+        }
+    }
+    *num_truth = num;
+}
+
+void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta, int x, int y)
 {
     int b,i,j,k,m,n;
     int h, w, c, th, level=0, in, out;
@@ -107,8 +133,14 @@ void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, net
     state.index = now;
     srand((unsigned int)time(0));
     for(b = 0; b < l.batch; ++b){
-        i = rand() * py.size % h;
-        j = rand() * py.size % h;
+        if (x < 0 || y < 0){
+            i = rand() * py.size % h;
+            j = rand() * py.size % h;
+        }
+        else{
+            i = x;
+            j = y;
+        }
         for (k = 0; k < c; ++k){
             int in_index = j + w*(i + h*(k + c*b));
             for(n = 0; n < py.size; ++n){
@@ -158,16 +190,23 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
 {
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *delta_cpu = calloc(l.batch*l.inputs, sizeof(float));
+
     int num_truth = state.net.layers[state.net.n - 1].truths;
     float *truth_cpu = calloc(num_truth, sizeof(float));
     cuda_pull_array(state.truth, truth_cpu, num_truth);
+
+    int truth_x[10] = { 0 }, truth_y[10] = { 0 }, level[10] = { 0 };
+    get_truth_xy(truth_cpu, &num_truth, &truth_x, &truth_y, &level, l.level);
+
     cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
+
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.input = in_cpu;
+
     layer layer = l;
     for (int j = 1; j < l.level; j++){
-        forward_pyramidpool_layer(in_cpu, layer, l, cpu_state, i+1, delta_cpu);
+        forward_pyramidpool_layer(in_cpu, layer, l, cpu_state, i+1, delta_cpu, -1, -1);
         state.input = layer.output_gpu;
         if (layer.type == PYRAMIDPOOL){
             layer = make_maxpool_layer_show(l.batch, layer.h, layer.w, layer.c, l.size, l.size, 0);
@@ -179,6 +218,7 @@ void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int
         cuda_pull_array(state.input, in_cpu, layer.batch*layer.outputs);
     }
     free(cpu_state.input);
+
     cuda_push_array(l.delta_gpu, delta_cpu, l.batch*l.inputs);
     free(delta_cpu);
 }

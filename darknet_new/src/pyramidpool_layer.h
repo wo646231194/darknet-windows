@@ -14,7 +14,7 @@ typedef layer pyramidpool_layer;
 image get_maxpool_image(pyramidpool_layer l);
 pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int level, int size);
 void resize_pyramidpool_layer(pyramidpool_layer *l, int w, int h);
-void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta);
+void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta, int x, int y);
 void backward_pyramidpool_layer(const pyramidpool_layer l, network_state state);
 
 #ifdef GPU
