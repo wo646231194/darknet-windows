@@ -311,9 +311,12 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
     char *input = buff;
     int j;
     float nms=.5;
-    box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
-    float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
-    for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+    int k = 0;
+    for (int i = 0; i < l.level; i++){
+        k += pow(2, 2 * i);
+    }
+    box *boxes = calloc(k , sizeof(box));
+    float *probs = calloc(k, sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);

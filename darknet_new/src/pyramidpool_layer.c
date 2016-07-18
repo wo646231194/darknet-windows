@@ -193,11 +193,68 @@ void backward_pyramidpool_layer(const layer l, network_state state)
     }
 }
 
+void forward_pyramidpool_layer_test(float * incpu, layer l, layer py, network_state state, int now)
+{
+    int b, i, j, k, m, n;
+    int h, w, c, th, level = 0, in, out;
+
+    if (l.type == PYRAMIDPOOL){
+        h = l.h;
+        w = l.w;
+        c = l.c;
+    }
+    else{
+        h = l.out_h;
+        w = l.out_w;
+        c = l.out_c;
+    }
+
+    th = h / 2;
+    while (th>1){
+        th /= 2;
+        level++;
+    }
+
+    state.index = now;
+    for (b = 0; b < l.batch; ++b){
+        for (i = 0; i < h; i += py.size){
+            for (j = 0; j < w; j += py.size){
+                for (k = 0; k < c; ++k){
+                    int in_index = j + w*(i + h*(k + c*b));
+                    for (n = 0; n < py.size; ++n){
+                        for (m = 0; m < py.size; ++m){
+                            out = n*py.size + m + k*(py.size*py.size);
+                            in = in_index + n*l.w + m;
+                            l.output[out] = incpu[in];
+                        }
+                    }
+                    int truth_index = get_truth_index(level, l.size, i, j);
+                    cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+                    state.input = l.output_gpu;
+                    forward_network_pyramid_gpu(state.net, state, now, truth_index, level);
+                }
+            }
+        }
+    }
+}
+
 #ifdef GPU
 
 void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
 {
     float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
+
+    network_state cpu_state = state;
+    cpu_state.train = state.train;
+    cpu_state.input = in_cpu;
+
+    if (!state.train){
+        layer lm = l;
+        forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
+        return;
+    }
+    
     float *delta_cpu = calloc(l.batch*l.inputs, sizeof(float));
 
     int num_truth = state.net.layers[state.net.n - 1].truths;
@@ -207,12 +264,6 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
     int truth_x[10] = { 0 }, truth_y[10] = { 0 }, level[10] = { 0 };
     get_truth_xy(truth_cpu, &num_truth, &truth_x, &truth_y, &level, l.level);
     free(truth_cpu);
-
-    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
-
-    network_state cpu_state = state;
-    cpu_state.train = state.train;
-    cpu_state.input = in_cpu;
 
     layer lm = l;
     for (int t = 0; t < num_truth; t++){
