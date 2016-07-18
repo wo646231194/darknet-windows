@@ -77,7 +77,7 @@ char *get_layer_string(LAYER_TYPE a);
 
 network make_network(int n);
 void forward_network(network net, network_state state);
-void forward_network_pyramid_gpu(network net, network_state state, int now, int index);
+void forward_network_pyramid_gpu(network net, network_state state, int now, int index, int level);
 void backward_network(network net, network_state state);
 void backward_network_pyramid_gpu(network net, network_state state, int end);
 void update_network(network net);

@@ -75,7 +75,7 @@ void train_pyramid(char *cfgfile, char *weightfile)
             sprintf(buff, "%s/pyramid-%d.weights", backup_directory, i);
             save_weights(net, buff);
         }
-        clear_data(train);
+        free_data(train);
     }
     char buff[256];
     sprintf(buff, "%s/pyramid-final.weights", backup_directory);

@@ -191,7 +191,7 @@ void forward_network(network net, network_state state)
         } else if(l.type == SHORTCUT){
             forward_shortcut_layer(l, state);
         } else if (l.type == PYRAMID){
-            forward_pyramid_layer(l, state, 0);
+            forward_pyramid_layer(l, state, 0, 0);
         } else if (l.type == PYRAMIDPOOL){
             //forward_pyramidpool_layer(l, state);
         }

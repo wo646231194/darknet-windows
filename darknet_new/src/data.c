@@ -331,7 +331,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
 
         index = get_pyramid_index(j, cx, cy);
 
-        if (truth[index]) continue;
+        if (truth[index * 5]) continue;
 
         truth[index * 5 + 0] = 1;
         truth[index * 5 + 1] = x;

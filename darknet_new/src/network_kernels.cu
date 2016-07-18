@@ -90,7 +90,7 @@ void forward_network_gpu(network net, network_state state)
         } else if(l.type == SHORTCUT){
             forward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
-            forward_pyramid_layer_gpu(l, state, 0);
+            forward_pyramid_layer_gpu(l, state, 0, 0);
         } else if (l.type == PYRAMIDPOOL){
             forward_pyramidpool_layer_gpu(l, state, i);
             break;
@@ -99,7 +99,7 @@ void forward_network_gpu(network net, network_state state)
     }
 }
 
-void forward_network_pyramid_gpu(network net, network_state state, int now, int index){
+void forward_network_pyramid_gpu(network net, network_state state, int now, int index, int level){
     int i;
     for (i = now; i < net.n; ++i){
         state.index = i;
@@ -146,7 +146,7 @@ void forward_network_pyramid_gpu(network net, network_state state, int now, int 
         } else if (l.type == SHORTCUT){
             forward_shortcut_layer_gpu(l, state);
         } else if (l.type == PYRAMID){
-            forward_pyramid_layer_gpu(l, state, index);
+            forward_pyramid_layer_gpu(l, state, index, level);
         } else if (l.type == PYRAMIDPOOL){
             forward_pyramidpool_layer_gpu(l, state, i);
             break;

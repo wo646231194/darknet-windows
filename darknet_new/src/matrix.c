@@ -16,7 +16,10 @@ void free_matrix(matrix m)
 void clear_matrix(matrix m)
 {
     int i;
-    for (i = 0; i < m.rows; ++i) *m.vals[i] = 0;
+    for (i = 0; i < m.rows; ++i) {
+        *m.vals[i] = 0;
+        free(m.vals[i]);
+    }
     free(m.vals);
 }
 

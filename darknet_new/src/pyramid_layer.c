@@ -43,7 +43,7 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     return l;
 }
 
-void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth_index)
+void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth_index, int level)
 {
     int i,j;
     //memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
@@ -69,7 +69,8 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                     l.delta[p_index] = l.noobject_scale*(0 - h_theta_x);
                     conf_loss -= log(1 - h_theta_x);
                 }
-                printf("Pyramid loss ->   %f\n", conf_loss);
+                *l.cost += conf_loss;
+                printf("neg %d ->  %f\n", level, *l.cost);
                 continue;
             }
 
@@ -117,12 +118,13 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - state.input[box_index + 2]);
             l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - state.input[box_index + 3]);
 
-            printf("Pyramid loss -> 1 %f\n", *l.cost);
+            printf("pos %d ->  %f\n", level, *l.cost);
         }
 
         //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
 
         if (truth_index == 0){
+            //printf("Pyramid loss -> 1 %f\n", *l.cost);
             //printf("Pyramid Avg IOU: %f, Pos Cat: %f, All Cat: %f, Pos Obj: %f, Any Obj: %f, count: %d\n", avg_iou / count, avg_cat / count, avg_allcat / (count*l.classes), avg_obj / count, avg_anyobj / (l.batch*l.n), count);
         }
     }
@@ -135,7 +137,7 @@ void backward_pyramid_layer(const pyramid_layer l, network_state state)
 
 #ifdef GPU
 
-void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int truth_index)
+void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int truth_index, int level)
 {
     if(!state.train){
         copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
@@ -154,7 +156,7 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int t
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;
-    forward_pyramid_layer(l, cpu_state, truth_index);
+    forward_pyramid_layer(l, cpu_state, truth_index, level);
     cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     free(cpu_state.input);
