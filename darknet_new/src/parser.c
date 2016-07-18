@@ -278,10 +278,10 @@ pyramid_layer parse_pyramid(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
-    int rescore = option_find_int(options, "rescore", 0);
+    //int rescore = option_find_int(options, "rescore", 0);
     int num = option_find_int(options, "num", 4);
     int level = option_find_int(options, "level", 4);
-    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, rescore);
+    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, 0);
 
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
@@ -557,6 +557,7 @@ void parse_net_options(list *options, network *net)
 network parse_network_cfg(char *filename)
 {
     network net;
+    pyramidpool_layer pl = { 0 };
     list *sections = read_cfg(filename);
     node *n = sections->front;
     if(!n) error("Config file has no sections");
@@ -632,7 +633,8 @@ network parse_network_cfg(char *filename)
         }else if (is_pyramid(s)){
             l = parse_pyramid(options, params);
         }else if (is_pyramidpool(s)){
-            l = parse_pyramidpool(options, params);
+            pl = parse_pyramidpool(options, params);
+            l = pl.layer;
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
@@ -661,6 +663,9 @@ network parse_network_cfg(char *filename)
 #else
         net.workspace = calloc(1, workspace_size);
 #endif
+    }
+    for (int j = 0; j < (pl.layer.level-1); j++){
+        net.pyramid[j] = pl.maxpool[j];
     }
     return net;
 }

@@ -9,17 +9,22 @@
 #include "maxpool_layer.h"
 #include "pyramid_layer.h"
 
-typedef layer pyramidpool_layer;
+typedef struct pyramidpool_layer
+{
+    layer layer;
+    maxpool_layer maxpool[5];
+    int type;
+}pyramidpool_layer;
 
-image get_maxpool_image(pyramidpool_layer l);
+image get_pyramidpool_image(pyramidpool_layer l);
 pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int level, int size);
 void resize_pyramidpool_layer(pyramidpool_layer *l, int w, int h);
 void forward_pyramidpool_layer(float * incpu, layer l, pyramidpool_layer py, network_state state, int now, float *delta, int x, int y);
-void backward_pyramidpool_layer(const pyramidpool_layer l, network_state state);
+void backward_pyramidpool_layer(const layer l, network_state state);
 
 #ifdef GPU
-void forward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state, int i);
-void backward_pyramidpool_layer_gpu(pyramidpool_layer l, network_state state);
+void forward_pyramidpool_layer_gpu(layer l, network_state state, int i);
+void backward_pyramidpool_layer_gpu(layer l, network_state state);
 #endif
 
 #endif
