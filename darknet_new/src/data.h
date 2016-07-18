@@ -66,6 +66,7 @@ typedef struct{
 } box_label;
 
 void free_data(data d);
+void clear_data(data d);
 
 pthread_t load_data_in_thread(load_args args);
 

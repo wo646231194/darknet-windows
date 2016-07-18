@@ -13,6 +13,13 @@ void free_matrix(matrix m)
     free(m.vals);
 }
 
+void clear_matrix(matrix m)
+{
+    int i;
+    for (i = 0; i < m.rows; ++i) *m.vals[i] = 0;
+    free(m.vals);
+}
+
 float matrix_topk_accuracy(matrix truth, matrix guess, int k)
 {
     int *indexes = calloc(k, sizeof(int));

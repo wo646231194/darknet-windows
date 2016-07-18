@@ -506,6 +506,21 @@ void free_data(data d)
     }
 }
 
+void clear_data(data d)
+{
+    if (d.indexes){
+        free(d.indexes);
+    }
+    if (!d.shallow){
+        clear_matrix(d.X);
+        clear_matrix(d.y);
+    }
+    else{
+        free(d.X.vals);
+        free(d.y.vals);
+    }
+}
+
 data load_data_region(int n, char **paths, int m, int w, int h, int size, int classes, float jitter)
 {
     char **random_paths = get_random_paths(paths, n, m);
