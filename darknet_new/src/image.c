@@ -101,18 +101,17 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
     }
 }
 
-void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image *labels, int classes)
+void draw_detections(image im, int num, float thresh, box *boxes, float *probs, char **names, image *labels, int classes)
 {
     int i;
 
     for(i = 0; i < num; ++i){
-        int class = max_index(probs[i], classes);
-        float prob = probs[i][class];
+        float prob = probs[i];
         if(prob > thresh){
             int width = pow(prob, 1./2.)*10+1;
             width = 3;
-            printf("%s: %.0f%%\n", names[class], prob*100);
-            int offset = class*1 % classes;
+            printf("%s: %.0f%%\n", names[0], prob*100);
+            int offset = 1 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
             float blue = get_color(0,offset,classes);

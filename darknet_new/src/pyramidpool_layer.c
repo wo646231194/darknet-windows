@@ -228,11 +228,11 @@ void forward_pyramidpool_layer_test(float * incpu, layer l, layer py, network_st
                             l.output[out] = incpu[in];
                         }
                     }
-                    int truth_index = get_truth_index(level, l.size, i, j);
-                    cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-                    state.input = l.output_gpu;
-                    forward_network_pyramid_gpu(state.net, state, now, truth_index, level);
                 }
+                int truth_index = get_truth_index(level, l.size, i, j);
+                cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+                state.input = l.output_gpu;
+                forward_network_pyramid_gpu(state.net, state, now, truth_index, level);
             }
         }
     }
@@ -252,6 +252,16 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
     if (!state.train){
         layer lm = l;
         forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
+        for (int j = 1; j < l.level; j++){
+            lm = state.net.pyramid[j - 1];
+            forward_maxpool_layer_gpu(lm, state);
+
+            state.input = lm.output_gpu;
+            cuda_pull_array(state.input, in_cpu, lm.batch*lm.outputs);
+            forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
+        }
+        lm = state.net.layers[state.net.n - 1];
+        cuda_push_array(lm.output_gpu, lm.output, lm.batch*lm.outputs);
         return;
     }
     

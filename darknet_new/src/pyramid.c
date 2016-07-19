@@ -82,31 +82,34 @@ void train_pyramid(char *cfgfile, char *weightfile)
     save_weights(net, buff);
 }
 
-void convert_pyramid_detections(float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
+void convert_pyramid_detections(float *predictions, int level, int num, int square, int side, int w, int h, float thresh, float *probs, box *boxes)
 {
-    int i,j,n;
-    //int per_cell = 5*num+classes;
-    for (i = 0; i < side*side; ++i){
-        int row = i / side;
-        int col = i % side;
-        for(n = 0; n < num; ++n){
-            int index = i*num + n;
-            int p_index = side*side*classes + i*num + n;
-            float scale = predictions[p_index];
-            int box_index = side*side*(classes + num) + (i*num + n)*4;
-            boxes[index].x = (predictions[box_index + 0] + col) / side * w;
-            boxes[index].y = (predictions[box_index + 1] + row) / side * h;
-            boxes[index].w = pow(predictions[box_index + 2], (square?2:1)) * w;
-            boxes[index].h = pow(predictions[box_index + 3], (square?2:1)) * h;
-            for(j = 0; j < classes; ++j){
-                int class_index = i*classes;
-                float prob = scale*predictions[class_index+j];
-                probs[index][j] = (prob > thresh) ? prob : 0;
-            }
-            if(only_objectness){
-                probs[index][0] = scale;
+    int i, j, c, n, k = 0, p_index, box_index, row;
+    box b = { 0 };
+    for (i = 0; i < level; ++i){
+        row = pow(2, i);
+        int in = k * 5 * num;
+        for (j = 0; j < row; ++j){
+            for (c = 0; c < row; ++c){
+                for (n = 0; n < num; ++n){
+                    p_index = in + (n + j * row + c) * 5;
+                    box_index = k * num + n + j * row + c;
+                    float prob = 1 / (1 + exp(-predictions[p_index]));
+                    b.x = predictions[p_index + 1];
+                    b.y = predictions[p_index + 2];
+                    b.w = predictions[p_index + 3];
+                    b.h = predictions[p_index + 4];
+                    if (prob>=thresh){
+                        probs[box_index] = prob;
+                        boxes[box_index].x = (0 + 0.5 + j) / row ;
+                        boxes[box_index].y = (0 + 0.5 + c) / row ;
+                        boxes[box_index].w = 0.5 / row ;
+                        boxes[box_index].h = 0.5 / row ;
+                    }
+                }
             }
         }
+        k += pow(2, 2 * i);
     }
 }
 
@@ -304,6 +307,7 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
         load_weights(&net, weightfile);
     }
     pyramid_layer l = net.layers[net.n-1];
+    l.classes = 1;
     set_batch_network(&net, 1);
     srand(2222222);
     clock_t time;
@@ -315,8 +319,8 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
     for (int i = 0; i < l.level; i++){
         k += pow(2, 2 * i);
     }
-    box *boxes = calloc(k , sizeof(box));
-    float *probs = calloc(k, sizeof(float *));
+    box *boxes = calloc(k*l.n +1 , sizeof(box));
+    float *probs = calloc(k*l.n +1 , sizeof(float *));
     while(1){
         if(filename){
             strncpy(input, filename, 256);
@@ -333,10 +337,10 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
         time=clock();
         float *predictions = network_predict(net, X);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        convert_pyramid_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
-        if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
+        convert_pyramid_detections(predictions, l.level, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+        //if (nms) do_nms_sort(boxes, probs, k*l.n, l.classes, nms);
         //draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, voc_names, voc_labels, 20);
-		draw_detections(im, l.side*l.side*l.n, thresh, boxes, probs, perdestrian_names, voc_labels, l.classes);
+		draw_detections(im, k*l.n, thresh, boxes, probs, perdestrian_names, voc_labels, l.classes);
         save_image(im, "predictions");
         show_image(im, "predictions");
 

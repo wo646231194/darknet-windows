@@ -139,26 +139,29 @@ void backward_pyramid_layer(const pyramid_layer l, network_state state)
 
 void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int truth_index, int level)
 {
+    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
+    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     if(!state.train){
-        copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, 1);
+        copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, (l.n* truth_index)+1);
+        for (int i = 0; i < l.inputs; i++){
+            l.output[truth_index *5 + i] = in_cpu[i];
+        }
         return;
     }
 
-    float *in_cpu = calloc(l.batch*l.inputs, sizeof(float));
     float *truth_cpu = 0;
     if(state.truth){
         int num_truth = l.truths ;
         truth_cpu = calloc(num_truth, sizeof(float));
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
-    cuda_pull_array(state.input, in_cpu, l.batch*l.inputs);
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
     cpu_state.input = in_cpu;
     forward_pyramid_layer(l, cpu_state, truth_index, level);
-    cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
+    //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+    //cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     free(cpu_state.input);
     if(cpu_state.truth) free(cpu_state.truth);
 }
