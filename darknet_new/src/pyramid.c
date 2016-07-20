@@ -101,10 +101,12 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
                     b.h = predictions[p_index + 4];
                     if (prob>=thresh){
                         probs[box_index] = prob;
-                        boxes[box_index].x = (0 + 0.5 + j) / row ;
-                        boxes[box_index].y = (0 + 0.5 + c) / row ;
-                        boxes[box_index].w = 0.5 / row ;
-                        boxes[box_index].h = 0.5 / row ;
+                        boxes[box_index].x = (b.x + 0.5 + j) / row ;
+                        boxes[box_index].y = (b.y + 0.5 + c) / row ;
+                        //b.w = b.w > (0.5 / row) ? (0.5 / row) : b.w;
+                        //b.h = b.h > (0.5 / row) ? (0.5 / row) : b.h;
+                        boxes[box_index].w = b.w + 0.5 / row ;
+                        boxes[box_index].h = b.h + 0.5 / row ;
                     }
                 }
             }

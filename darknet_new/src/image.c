@@ -110,7 +110,6 @@ void draw_detections(image im, int num, float thresh, box *boxes, float *probs, 
         if(prob > thresh){
             int width = pow(prob, 1./2.)*10+1;
             width = 3;
-            printf("%s: %.0f%%\n", names[0], prob*100);
             int offset = 1 % classes;
             float red = get_color(2,offset,classes);
             float green = get_color(1,offset,classes);
@@ -130,7 +129,9 @@ void draw_detections(image im, int num, float thresh, box *boxes, float *probs, 
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
+            if ((right - left < 1) || (bot - top) < 1) continue;
 
+            printf("%s: %.0f%%\n", names[0], prob * 100);
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             //if (labels) draw_label(im, top + width, left, labels[class], rgb);
         }

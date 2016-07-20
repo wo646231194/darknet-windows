@@ -326,8 +326,8 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         int num = pow(2, j);
         x = cx*num - floor(cx*num) - 0.5;
         y = cy*num - floor(cy*num) - 0.5;
-        w = w - 1 / (2 * num);
-        h = h - 1 / (2 * num);
+        w = w - 0.5 / num;
+        h = h - 0.5 / num;
 
         index = get_pyramid_index(j, cx, cy);
 

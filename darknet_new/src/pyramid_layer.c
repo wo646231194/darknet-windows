@@ -51,10 +51,8 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
     if(state.train){
         float avg_loc = 0;
         float avg_conf = 0;
-        float avg_anyobj = 0;
-        float avg_cat = 0;
-        float avg_allcat = 0;
         float conf_loss = 0;
+        float loc_loss = 0;
         *(l.cost) = 0;
         int size = l.inputs * l.batch;
         memset(l.delta, 0, size * sizeof(float));
@@ -67,10 +65,15 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                     int p_index = index + j*(1 + l.coords);
                     float h_theta_x = 1 / (1 + exp(-state.input[p_index]));
                     l.delta[p_index] = l.noobject_scale*(0 - h_theta_x);
+                    l.delta[p_index + 1] = 0 - state.input[p_index + 1] * l.coord_scale;
+                    l.delta[p_index + 2] = 0 - state.input[p_index + 2] * l.coord_scale;
+                    l.delta[p_index + 3] = 0 - state.input[p_index + 3] * l.coord_scale;
+                    l.delta[p_index + 4] = 0 - state.input[p_index + 4] * l.coord_scale;
                     conf_loss -= log(1 - h_theta_x);
+                    loc_loss = loc_loss + smooth_l1(l.delta[p_index + 1]) + smooth_l1(l.delta[p_index + 2]) + smooth_l1(l.delta[p_index + 3]) + smooth_l1(l.delta[p_index + 4]);
                 }
-                *l.cost += conf_loss;
-                printf("neg %d ->  %f\n", level, *l.cost);
+                *l.cost = conf_loss + loc_loss/l.n;
+                printf("neg %d  ->  all  %.5f, conf  %.5f, loc %.5f  \n", level, *l.cost, conf_loss, loc_loss/4);
                 continue;
             }
 
@@ -104,21 +107,27 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
 
             int box_index = index + best_index * (1 + l.coords) + 1 ;
             box out = float_to_box(state.input + box_index);
-            if (l.sqrt) {
-                out.w = out.w*out.w;
-                out.h = out.h*out.h;
-            }
-            float loss_l1 = box_smooth_loss_l1(out, truth);
+            out.x = l.coord_scale * out.x;
+            out.y = l.coord_scale * out.y;
+            out.w = l.coord_scale * out.w;
+            out.h = l.coord_scale * out.h;
+            truth.x = l.coord_scale * truth.x;
+            truth.y = l.coord_scale * truth.y;
+            truth.w = l.coord_scale * truth.w;
+            truth.h = l.coord_scale * truth.h;
+            loc_loss = box_smooth_loss_l1(out, truth);
 
             //printf("%d,", best_index);
-            *(l.cost) += conf_loss + l.coord_scale * loss_l1;
+            *(l.cost) += conf_loss + loc_loss;
+            for (int t = 0; t < 4; t++){
+                l.delta[box_index + t] = smooth_l1(state.truth[truth_index + t] - state.input[box_index + t]);
+            }
+            //l.delta[box_index + 0] = l.coord_scale*(state.truth[truth_index + 0] - state.input[box_index + 0]);
+            //l.delta[box_index + 1] = l.coord_scale*(state.truth[truth_index + 1] - state.input[box_index + 1]);
+            //l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - state.input[box_index + 2]);
+            //l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - state.input[box_index + 3]);
 
-            l.delta[box_index + 0] = l.coord_scale*(state.truth[truth_index + 0] - state.input[box_index + 0]);
-            l.delta[box_index + 1] = l.coord_scale*(state.truth[truth_index + 1] - state.input[box_index + 1]);
-            l.delta[box_index + 2] = l.coord_scale*(state.truth[truth_index + 2] - state.input[box_index + 2]);
-            l.delta[box_index + 3] = l.coord_scale*(state.truth[truth_index + 3] - state.input[box_index + 3]);
-
-            printf("pos %d ->  %f\n", level, *l.cost);
+            printf("pos %d  ->  all  %.5f, conf  %.5f, loc %.5f  \n", level, *l.cost, conf_loss, loc_loss);
         }
 
         //*(l.cost) = pow(mag_array(l.delta, l.outputs * l.batch), 2);
