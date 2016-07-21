@@ -167,27 +167,21 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 {
     int i;
     for(i = 0; i < n; ++i){
-        boxes[i].left   = boxes[i].left  * sx - dx;
-        boxes[i].right  = boxes[i].right * sx - dx;
-        boxes[i].top    = boxes[i].top   * sy - dy;
-        boxes[i].bottom = boxes[i].bottom* sy - dy;
+        //boxes[i].left   = boxes[i].left  * sx - dx;
+        //boxes[i].right  = boxes[i].right * sx - dx;
+        //boxes[i].top    = boxes[i].top   * sy - dy;
+        //boxes[i].bottom = boxes[i].bottom* sy - dy;
 
         if(flip){
-            float swap = boxes[i].left;
-            boxes[i].left = 1. - boxes[i].right;
-            boxes[i].right = 1. - swap;
+            boxes[i].x = 1 - boxes[i].x - boxes[i].w;
         }
 
         boxes[i].left =  constrain(0, 1, boxes[i].left);
         boxes[i].right = constrain(0, 1, boxes[i].right);
         boxes[i].top =   constrain(0, 1, boxes[i].top);
         boxes[i].bottom =   constrain(0, 1, boxes[i].bottom);
-
-        boxes[i].x = (boxes[i].left+boxes[i].right)/2;
-        boxes[i].y = (boxes[i].top+boxes[i].bottom)/2;
-        boxes[i].w = (boxes[i].right - boxes[i].left);
-        boxes[i].h = (boxes[i].bottom - boxes[i].top);
-
+        boxes[i].x = constrain(0, 1, boxes[i].x);
+        boxes[i].y = constrain(0, 1, boxes[i].y);
         boxes[i].w = constrain(0, 1, boxes[i].w);
         boxes[i].h = constrain(0, 1, boxes[i].h);
     }
@@ -285,14 +279,12 @@ int get_pyramid_level(int level, float width){
     }
 }
 
-int get_pyramid_index(int level, float x, float y){
-    int sum = 0, num = pow(2, level);
+int get_pyramid_index(int level){
+    int sum = 0;
     for (int i = 0; i < level; i++){
         sum += pow(2, 2*i);
     }
-    int row = floor(x*num);
-    int col = floor(y*num);
-    return (sum + row*num + col);
+    return sum;
 }
 
 void fill_truth_pyramid(char *path, float *truth, int classes, int level, int flip)
@@ -329,7 +321,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         w = w - 0.5 / num;
         h = h - 0.5 / num;
 
-        index = get_pyramid_index(j, cx, cy);
+        index = get_pyramid_index(j) + floor(cx*num)*num + floor(cy*num);
 
         if (truth[index * 5]) continue;
 
