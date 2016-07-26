@@ -110,21 +110,32 @@ float box_loss_l1(box a, box b){
     return sum;
 }
 
-float smooth_l1(float x){
-    if (abs(x) < 1){
+float smooth_l1(float x, int s){
+    if (abs(x*s) < 1){
         return 0.5*x*x;
     }
     else{
-        return abs(x) - 0.5;
+        float v = (abs(x*s) - 0.5) / s;
+        return v;
     }
 }
 
-float box_smooth_loss_l1(box a, box b){
+float smooth_delta_l1(float x, int s){
+    if (abs(x*s) < 1){
+        return 1/s;
+    }
+    else{
+        float v = abs(x);
+        return v;
+    }
+}
+
+float box_smooth_loss_l1(box a, box b, int s){
     float sum = 0;
-    sum += smooth_l1(a.x - b.x);
-    sum += smooth_l1(a.y - b.y);
-    sum += smooth_l1(a.w - b.w);
-    sum += smooth_l1(a.h - b.h);
+    sum += smooth_l1(a.x - b.x, s);
+    sum += smooth_l1(a.y - b.y, s);
+    sum += smooth_l1(a.w - b.w, s);
+    sum += smooth_l1(a.h - b.h, s);
     return sum;
 }
 
