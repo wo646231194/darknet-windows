@@ -29,6 +29,7 @@ typedef struct{
     int shallow;
     int *num_boxes;
     box **boxes;
+    char *fname;
 } data;
 
 typedef enum {

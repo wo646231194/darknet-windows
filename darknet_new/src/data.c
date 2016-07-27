@@ -318,8 +318,8 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         int num = pow(2, j);
         x = cx*num - floor(cx*num) - 0.5;
         y = cy*num - floor(cy*num) - 0.5;
-        w = w - 0.5 / num;
-        h = h - 0.5 / num;
+        w = w * num;
+        h = h * num;
 
         index = get_pyramid_index(j) + floor(cx*num)*num + floor(cy*num);
 
@@ -577,6 +577,7 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
     d.X.rows = n;
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w * 3;
+    d.fname = random_paths[0];
 
     int k = 0;
     for (int i = 0; i < level; i++){
