@@ -88,25 +88,32 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
     box b = { 0 };
     for (i = 0; i < level; ++i){
         row = pow(2, i);
-        int in = k * 5 * num;
         for (j = 0; j < row; ++j){
             for (c = 0; c < row; ++c){
                 for (n = 0; n < num; ++n){
-                    p_index = in + (n + j * row + c) * 5;
-                    box_index = k * num + n + j * row + c;
+                    box_index = k * num + n + j * row * num + c * num;
+                    p_index = box_index * 5;
                     float prob = 1 / (1 + exp(-predictions[p_index]));
+                    //float prob = predictions[p_index];
                     b.x = predictions[p_index + 1];
                     b.y = predictions[p_index + 2];
                     b.w = predictions[p_index + 3];
                     b.h = predictions[p_index + 4];
+                    b.h = b.h * b.h;
+                    b.w = b.h / 3.2;
                     if (prob>=thresh){
                         probs[box_index] = prob;
-                        boxes[box_index].x = (b.x + 0.5 + j) / row ;
-                        boxes[box_index].y = (b.y + 0.5 + c) / row ;
+                        //boxes[box_index].x = (b.x + 0.5 + j) / row ;
+                        //boxes[box_index].y = (b.y + 0.5 + c) / row ;
                         //b.w = b.w > (0.5 / row) ? (0.5 / row) : b.w;
                         //b.h = b.h > (0.5 / row) ? (0.5 / row) : b.h;
-                        boxes[box_index].w = b.w + 0.5 / row ;
-                        boxes[box_index].h = b.h + 0.5 / row ;
+                        //boxes[box_index].w = b.w + 0.5 / row ;
+                        //boxes[box_index].h = b.h + 0.5 / row ;
+
+                        boxes[box_index].x = (b.x + c + 0.5) / row ;
+                        boxes[box_index].y = (b.y + j + 0.5) / row;
+                        boxes[box_index].w = b.w / row ;
+                        boxes[box_index].h = b.h / row ;
                     }
                 }
             }
@@ -357,6 +364,65 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
     }
 }
 
+void truth_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
+{
+    char *train_images = "E:/Experiment/YOLO/yolo_train/VOCdevkit/Caltech/train.txt";
+    char *backup_directory = "E:/Experiment/YOLO/yolo_train/backup";
+    srand(time(0));
+    data_seed = time(0);
+    char *base = basecfg(cfgfile);
+    printf("%s\n", base);
+    network net = parse_network_cfg(cfgfile);
+    if (weightfile){
+        load_weights(&net, weightfile);
+    }
+    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    data  buffer;
+    layer l = net.layers[net.n - 1];
+    list *plist = get_paths(train_images);
+    char **paths = (char **)list_to_array(plist);
+
+    set_batch_network(&net, 1);
+    srand(2222222);
+    clock_t time;
+    int j;
+    int k = 0;
+    for (int i = 0; i < l.level; i++){
+        k += pow(2, 2 * i);
+    }
+    box *boxes = calloc(k*l.n + 1, sizeof(box));
+    float *probs = calloc(k*l.n + 1, sizeof(float *));
+    while (1){
+        time = clock();
+        buffer = load_data_pyramid(1, paths, plist->size, net.w, net.h, l.level, 0);
+
+        printf("Loaded: %lf seconds\n", sec(clock() - time));
+        char *input = buffer.fname;
+
+        image im = load_image_color(input, 0, 0);
+        image sized = resize_image(im, net.w, net.h);
+        float *X = sized.data;
+        time = clock();
+        //float loss = train_network(net, buffer);
+        float *predictions = buffer.y.vals[0];
+
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock() - time));
+        convert_pyramid_detections(predictions, l.level, 1, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
+
+        draw_detections(im, k*l.n, thresh, boxes, probs, perdestrian_names, voc_labels, l.classes);
+        show_image(im, "predictions");
+        show_image(sized, "resized");
+
+        free_image(im);
+        free_image(sized);
+#ifdef OPENCV
+        cvWaitKey(0);
+        cvDestroyAllWindows();
+#endif
+        if (filename) break;
+    }
+}
+
 void run_pyramid(int argc, char **argv)
 {
     int i;
@@ -383,4 +449,5 @@ void run_pyramid(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_pyramid(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_pyramid_recall(cfg, weights);
 	else if (0 == strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, perdestrian_names, voc_labels, 1, frame_skip);
+    else if (0 == strcmp(argv[2], "truth")) truth_pyramid(cfg, weights, filename, thresh);
 }
