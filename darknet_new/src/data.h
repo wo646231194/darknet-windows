@@ -76,7 +76,7 @@ data load_data_captcha(char **paths, int n, int m, int k, int w, int h);
 data load_data_captcha_encode(char **paths, int n, int m, int w, int h);
 data load_data(char **paths, int n, int m, char **labels, int k, int w, int h);
 data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, int classes, float jitter);
-data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int classes);
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int f);
 data load_data_tag(char **paths, int n, int m, int k, int min, int max, int size);
 data load_data_augment(char **paths, int n, int m, char **labels, int k, int min, int max, int size);
 data load_data_study(char **paths, int n, int m, char **labels, int k, int min, int max, int size);

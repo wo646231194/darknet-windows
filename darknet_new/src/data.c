@@ -321,7 +321,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         w = w * num;
         h = h * num;
 
-        index = get_pyramid_index(j) + floor(cx*num)*num + floor(cy*num);
+        index = get_pyramid_index(j) + floor(cy*num)*num + floor(cx*num);
 
         if (truth[index * 5]) continue;
 
@@ -567,10 +567,10 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     return d;
 }
 
-data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int classes)
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int f)
 {
     char **random_paths = get_random_paths(paths, n, m);
-    int i;
+    int i, flip=0;
     data d = { 0 };
     d.shallow = 0;
 
@@ -592,13 +592,15 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
         int oh = orig.h;
         int ow = orig.w;
 
-        int flip = rand() % 2;
+        if (f){
+            flip = rand() % 2;
+        }
 
         image sized = resize_image(orig, w, h);
         if (flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_pyramid(random_paths[i], d.y.vals[i], classes, level, flip);
+        fill_truth_pyramid(random_paths[i], d.y.vals[i], 1, level, flip);
 
         free_image(orig);
     }
