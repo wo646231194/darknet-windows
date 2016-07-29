@@ -108,7 +108,7 @@ void get_truth_xy(float *truth, int *num_truth, int *truth_x, int *truth_y, int 
     int num = 0;
     for (int i = 0; i < *num_truth; i+=5){
         if (truth[i]){
-            level[num] = truth_to_level(n, i, &truth_x[num], &truth_y[num]);
+            level[num] = truth_to_level(n, floor(i/4), &truth_x[num], &truth_y[num]);
             num++;
         }
     }
@@ -148,7 +148,7 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
             j = y*l.size;
         }
         for (k = 0; k < c; ++k){
-            int in_index = j + w*(i + h*(k + c*b));
+            int in_index = j + w*i + k*h*w + b*c*h*w;
             for (n = 0; n < py.size; ++n){
                 for (m = 0; m < py.size; ++m){
                     out = n*py.size + m + k*(py.size*py.size);
@@ -252,14 +252,14 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
     if (!state.train){
         layer lm = l;
         forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
-        for (int j = 1; j < l.level; j++){
-            lm = state.net.pyramid[j - 1];
-            forward_maxpool_layer_gpu(lm, state);
+        //for (int j = 1; j < l.level; j++){
+        //    lm = state.net.pyramid[j - 1];
+        //    forward_maxpool_layer_gpu(lm, state);
 
-            state.input = lm.output_gpu;
-            cuda_pull_array(state.input, in_cpu, lm.batch*lm.outputs);
-            forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
-        }
+        //    state.input = lm.output_gpu;
+        //    cuda_pull_array(state.input, in_cpu, lm.batch*lm.outputs);
+        //    forward_pyramidpool_layer_test(in_cpu, lm, l, cpu_state, i + 1);
+        //}
         lm = state.net.layers[state.net.n - 1];
         cuda_push_array(lm.output_gpu, lm.output, lm.batch*lm.outputs);
         return;
@@ -271,7 +271,7 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
     float *truth_cpu = calloc(num_truth, sizeof(float));
     cuda_pull_array(state.truth, truth_cpu, num_truth);
 
-    int truth_x[10] = { 0 }, truth_y[10] = { 0 }, level[10] = { 0 };
+    int truth_x[100] = { 0 }, truth_y[100] = { 0 }, level[100] = { 0 };
     get_truth_xy(truth_cpu, &num_truth, &truth_x, &truth_y, &level, l.level);
     free(truth_cpu);
 
@@ -281,21 +281,21 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
             forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
         }
     }
-    forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
-    for (int j = 1; j < l.level; j++){
-        state.input = lm.output_gpu;
-        lm = state.net.pyramid[j - 1];
-        forward_maxpool_layer_gpu(lm, state);
+    //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
+    //for (int j = 1; j < l.level; j++){
+    //    state.input = lm.output_gpu;
+    //    lm = state.net.pyramid[j - 1];
+    //    forward_maxpool_layer_gpu(lm, state);
 
-        state.input = lm.output_gpu;
-        cuda_pull_array(state.input, in_cpu, lm.batch*lm.outputs);
-        for (int t = 0; t < num_truth; t++){
-            if (level[t] == (l.level - j -1)){
-                forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
-            }
-        }
-        forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
-    }
+    //    state.input = lm.output_gpu;
+    //    cuda_pull_array(state.input, in_cpu, lm.batch*lm.outputs);
+    //    for (int t = 0; t < num_truth; t++){
+    //        if (level[t] == (l.level - j -1)){
+    //            forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
+    //        }
+    //    }
+    //    forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
+    //}
     free(cpu_state.input);
 
     cuda_push_array(l.delta_gpu, delta_cpu, l.batch*l.inputs);

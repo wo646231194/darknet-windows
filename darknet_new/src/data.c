@@ -287,7 +287,7 @@ int get_pyramid_index(int level){
     return sum;
 }
 
-void fill_truth_pyramid(char *path, float *truth, int classes, int level, int flip)
+void fill_truth_pyramid(char *path, float *truth, int classes, int level, int flip, int size)
 {
     char *labelpath = find_replace(path, "images", "labels");
     labelpath = find_replace(labelpath, "JPEGImages", "labels");
@@ -316,12 +316,13 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         j = get_pyramid_level(level, h);
 
         int num = pow(2, j);
-        x = cx*num - floor(cx*num) - 0.5;
-        y = cy*num - floor(cy*num) - 0.5;
+        x = cx*num - floor(cx*num) ;
+        y = cy*num - floor(cy*num) ;
         w = w * num;
         h = h * num;
 
         index = get_pyramid_index(j) + floor(cy*num)*num + floor(cx*num);
+        index = index * size + floor(x*size);
 
         if (truth[index * 5]) continue;
 
@@ -567,7 +568,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     return d;
 }
 
-data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int f)
+data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int f, int size)
 {
     char **random_paths = get_random_paths(paths, n, m);
     int i, flip=0;
@@ -583,7 +584,7 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
     for (int i = 0; i < level; i++){
         k += pow(2, 2 * i);
     }
-    k *= 5;
+    k = k * 5 * size;
     d.y = make_matrix(n, k);
     srand((unsigned int)time(0));
     for (i = 0; i < n; ++i){
@@ -600,7 +601,7 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
         if (flip) flip_image(sized);
         d.X.vals[i] = sized.data;
 
-        fill_truth_pyramid(random_paths[i], d.y.vals[i], 1, level, flip);
+        fill_truth_pyramid(random_paths[i], d.y.vals[i], 1, level, flip, size);
 
         free_image(orig);
     }
@@ -811,7 +812,7 @@ void *load_thread(void *ptr)
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size);
         //*a.d = load_data(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);
     } else if (a.type == PYRAMID_DATA){
-        *a.d = load_data_pyramid(a.n, a.paths, a.m, a.w, a.h, a.level, a.classes);
+        *a.d = load_data_pyramid(a.n, a.paths, a.m, a.w, a.h, a.level, a.classes, a.size);
     }
     free(ptr);
     return 0;

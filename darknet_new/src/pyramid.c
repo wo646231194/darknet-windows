@@ -44,6 +44,7 @@ void train_pyramid(char *cfgfile, char *weightfile)
     load_args args = {0};
     args.w = net.w;
     args.h = net.h;
+    args.size = l.n;
     args.paths = paths;
     args.n = imgs;
     args.m = plist->size;
@@ -86,6 +87,7 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
 {
     int i, j, c, n, k = 0, p_index, box_index, row;
     box b = { 0 };
+    float step = 1.0 / num;
     for (i = 0; i < level; ++i){
         row = pow(2, i);
         for (j = 0; j < row; ++j){
@@ -100,8 +102,12 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
                     b.w = predictions[p_index + 3];
                     b.h = predictions[p_index + 4];
                     b.h = b.h * b.h;
+
+                    b.x = constrain(0, step, b.x);
+                    b.y = constrain(0, 1, b.y);
+                    b.h = constrain(0.5, 1, b.h);
                     b.w = b.h / 3.2;
-                    if (prob>=thresh){
+                    if (i == 3){
                         probs[box_index] = prob;
                         //boxes[box_index].x = (b.x + 0.5 + j) / row ;
                         //boxes[box_index].y = (b.y + 0.5 + c) / row ;
@@ -110,12 +116,12 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
                         //boxes[box_index].w = b.w + 0.5 / row ;
                         //boxes[box_index].h = b.h + 0.5 / row ;
 
-                        boxes[box_index].x = (b.x + c + 0.5) / row ;
-                        boxes[box_index].y = (b.y + j + 0.5) / row;
+                        boxes[box_index].x = (b.x + c + step*n ) / row ;
+                        boxes[box_index].y = (b.y + j ) / row;
                         boxes[box_index].w = b.w / row ;
                         boxes[box_index].h = b.h / row ;
                     }
-                }
+                }   
             }
         }
         k += pow(2, 2 * i);
@@ -394,7 +400,7 @@ void truth_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh
     float *probs = calloc(k*l.n + 1, sizeof(float *));
     while (1){
         time = clock();
-        buffer = load_data_pyramid(1, paths, plist->size, net.w, net.h, l.level, 0);
+        buffer = load_data_pyramid(1, paths, plist->size, net.w, net.h, l.level, 0, l.n);
 
         printf("Loaded: %lf seconds\n", sec(clock() - time));
         char *input = buffer.fname;
