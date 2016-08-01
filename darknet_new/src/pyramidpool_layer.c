@@ -18,7 +18,7 @@ image get_pyramidpool_delta(pyramidpool_layer l)
     return float_to_image(w, h, c, l.layer.delta);
 }
 
-pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int level, int size)
+pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int level, int size, int pad)
 {
     //fprintf(stderr, "Maxpool Layer: %d x %d x %d image, %d size, %d stride\n", h,w,c,size,stride);
     pyramidpool_layer l = {0};
@@ -28,13 +28,14 @@ pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int lev
     l.layer.h = h;
     l.layer.w = w;
     l.layer.c = c;
-    l.layer.out_w = size;
-    l.layer.out_h = size;
+    l.layer.out_w = size+2*pad;
+    l.layer.out_h = size+2*pad;
     l.layer.out_c = c;
     l.layer.outputs = l.layer.out_h * l.layer.out_w * l.layer.out_c;
     l.layer.inputs = h*w*c;
     l.layer.level = level;
     l.layer.size = size;
+    l.layer.pad = pad;
     int output_size = l.layer.out_h * l.layer.out_w * l.layer.out_c * batch;
     l.layer.indexes = calloc(output_size, sizeof(int));
     l.layer.output = calloc(output_size, sizeof(float));
@@ -119,6 +120,7 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
 {
     int b,i,j,k,m,n;
     int h, w, c, th, level=0, in, out;
+    int pad = py.pad;
 
     if (l.type == PYRAMIDPOOL){
         h = l.h;
@@ -149,11 +151,16 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
         }
         for (k = 0; k < c; ++k){
             int in_index = j + w*i + k*h*w + b*c*h*w;
-            for (n = 0; n < py.size; ++n){
-                for (m = 0; m < py.size; ++m){
-                    out = n*py.size + m + k*(py.size*py.size);
+            for (n = -pad; n < py.size + pad; ++n){
+                for (m = -pad; m < py.size + pad; ++m){
+                    out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                     in = in_index + n*l.w + m;
-                    l.output[out] = incpu[in];
+                    if (in < 0){
+                        l.output[out] = 0;
+                    }
+                    else{
+                        l.output[out] = incpu[in];
+                    }
                 }
             }
         }
@@ -169,11 +176,13 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
             cuda_pull_array(py.delta_gpu, py.delta, py.batch*py.outputs);
             for (k = 0; k < c; ++k){
                 int in_index = j + w*(i + h*(k + c*b));
-                for (n = 0; n < py.size; ++n){
-                    for (m = 0; m < py.size; ++m){
-                        out = n*py.size + m + k*(py.size*py.size);
+                for (n = -pad; n < py.size + pad; ++n){
+                    for (m = -pad; m < py.size + pad; ++m){
+                        out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                         in = in_index + n*l.w + m;
-                        delta[in] = py.delta[out];
+                        if (in>=0){
+                            delta[in] = py.delta[out];
+                        }
                     }
                 }
             }
@@ -197,6 +206,7 @@ void forward_pyramidpool_layer_test(float * incpu, layer l, layer py, network_st
 {
     int b, i, j, k, m, n;
     int h, w, c, th, level = 0, in, out;
+    int pad = py.pad;
 
     if (l.type == PYRAMIDPOOL){
         h = l.h;
@@ -221,11 +231,16 @@ void forward_pyramidpool_layer_test(float * incpu, layer l, layer py, network_st
             for (j = 0; j < w; j += py.size){
                 for (k = 0; k < c; ++k){
                     int in_index = j + w*(i + h*(k + c*b));
-                    for (n = 0; n < py.size; ++n){
-                        for (m = 0; m < py.size; ++m){
-                            out = n*py.size + m + k*(py.size*py.size);
+                    for (n = -pad; n < py.size + pad; ++n){
+                        for (m = -pad; m < py.size + pad; ++m){
+                            out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                             in = in_index + n*l.w + m;
-                            l.output[out] = incpu[in];
+                            if (in < 0){
+                                l.output[out] = 0;
+                            }
+                            else{
+                                l.output[out] = incpu[in];
+                            }
                         }
                     }
                 }
