@@ -94,18 +94,18 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
             for (c = 0; c < row; ++c){
                 for (n = 0; n < num; ++n){
                     box_index = k * num + n + j * row * num + c * num;
-                    p_index = box_index * 5;
-                    float prob = 1 / (1 + exp(-predictions[p_index]));
+                    p_index = box_index * 6;
+                    float prob = predictions[p_index] * predictions[p_index+1];
                     //float prob = predictions[p_index];
-                    b.x = predictions[p_index + 1];
-                    b.y = predictions[p_index + 2];
-                    b.w = predictions[p_index + 3];
-                    b.h = predictions[p_index + 4];
-                    b.h = b.h * b.h;
+                    b.x = predictions[p_index + 2];
+                    b.y = predictions[p_index + 3];
+                    b.w = predictions[p_index + 4];
+                    b.h = predictions[p_index + 5];
 
-                    b.x = constrain(0, step, b.x);
+                    b.x = b.x * step;
                     b.y = constrain(0, 1, b.y);
-                    b.h = constrain(0.5, 1, b.h);
+                    b.h = b.h / 2.0;
+                    b.h = b.h + 0.5;
                     b.w = b.h / 3.2;
                     if (i == 3){
                         probs[box_index] = prob;

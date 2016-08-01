@@ -12,6 +12,7 @@
 
 pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int classes, int coords, int rescore)
 {
+    int k=0;
     pyramid_layer l = {0};
     l.type = PYRAMID;
 
@@ -23,13 +24,13 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     l.rescore = rescore;
     l.level = level;
     //assert( pow(2,2*level) <= inputs/1024);
-    l.truths = 0;
+    //l.truths = 0;
     for (int i = 0; i < level; i++){
-        l.truths += pow(2, 2 * i);
+        k += pow(2, 2 * i);
     }
-    l.truths = l.truths * (classes + coords) * n;
+    l.truths = k * (classes + coords) * n;
     l.cost = calloc(1, sizeof(float));
-    l.outputs = l.truths ;
+    l.outputs = k * inputs;
     l.output = calloc(batch*l.outputs, sizeof(float));
     l.delta = calloc(batch*l.outputs, sizeof(float));
 #ifdef GPU
@@ -37,7 +38,7 @@ pyramid_layer make_pyramid_layer(int batch, int inputs, int n, int level, int cl
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 #endif
 
-    fprintf(stderr, "Pyramid Layer: output %d , pyramid level %d , per area %d * (x,y,w,h,s) box\n", l.truths , l.level, l.n);
+    fprintf(stderr, "Pyramid Layer: output %d , pyramid level %d , per area %d * (x,y,w,h,s) box\n", k * inputs, l.level, l.n);
     srand(0);
 
     return l;
@@ -50,7 +51,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
     int b, s, is_obj;
     if(state.train){
         float avg_loc = 0;
-        float count = 0;
+        int count = 0;
         float conf_loss = 0;
         float loc_loss = 0;
         *(l.cost) = 0;
@@ -63,12 +64,14 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                 is_obj = state.truth[t];
 
                 if (!is_obj){
-                    //int p_index = index + s*(1 + l.coords);
+                    int p_index = index + s*(1 + l.coords + l.rescore);
+                    float h_theta_x = state.input[p_index];
+                    l.delta[p_index] = 0.0 - h_theta_x;
                     //float h_theta_x = 1 / (1 + exp(-state.input[p_index]));
                     //l.delta[p_index] = l.noobject_scale*(0 - state.input[p_index]);
                     //l.delta[p_index] = l.noobject_scale*(0 - h_theta_x);
                     //conf_loss += pow(l.delta[p_index] + 1, 2);
-                    //conf_loss -= log(1 - h_theta_x);
+                    conf_loss -= log(1 - h_theta_x);
                     //l.delta[p_index + 1] = 0-state.input[p_index + 1];
                     //l.delta[p_index + 2] = 0-state.input[p_index + 2];
                     //l.delta[p_index + 3] = 0-state.input[p_index + 3];
@@ -121,26 +124,28 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                 //    best_index = rand()%l.n;
                 //}
                 best_index = s;
+                //printf("%d , ", s);
 
-                int box_index = index + best_index * (1 + l.coords) + 1;
+                int box_index = index + best_index * (1 + l.coords + l.rescore) + 1 + l.rescore;
+                l.delta[box_index - 2] = 1.0 - state.input[box_index - 2];
                 box out = float_to_box(state.input + box_index);
                 float step = 1.0 / l.n;
 
-                out.x = constrain(0, step, out.x);
+                out.x = out.x / l.n;
                 out.x = out.x + step * s;
-                out.y = constrain(0, 1, out.y);
-                out.h = out.h * out.h;
-                out.h = constrain(0.5, 1, out.h);
+                out.h = out.h / 2.0;
+                out.h = out.h + 0.5;
                 out.w = out.h / 3.2;
 
                 //loc_loss = box_smooth_loss_l1(out, truth, l.coord_scale);
                 float iou = box_iou(out, truth);
                 loc_loss += 1. - iou;
 
-                //float h_theta_x = 1 / (1 + exp(-state.input[best_index]));
-                l.delta[box_index - 1] = l.object_scale*(iou - state.input[box_index - 1]);
-                //conf_loss -= log(h_theta_x);
-                conf_loss += pow(l.delta[box_index - 1] + loc_loss, 2);
+                float h_theta_x = state.input[box_index-1];
+                //l.delta[box_index - 1] = l.object_scale*(iou - state.input[box_index - 1]);
+                l.delta[box_index -1] = l.object_scale*(iou - h_theta_x);
+                conf_loss -= log(h_theta_x);
+                //conf_loss += pow(l.delta[box_index - 1] + loc_loss, 2);
 
                 //printf("%d,", best_index);
                 *(l.cost) += conf_loss + loc_loss;
@@ -148,11 +153,11 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                 //l.delta[box_index + t] = smooth_l1(state.truth[truth_index + t] - state.input[box_index + t], l.coord_scale);
                 //l.delta[box_index + t] = l.coord_scale*(state.truth[truth_index + 0] - state.input[box_index + 0]);
                 //}
-                truth.x = truth.x - step * s;
-                l.delta[box_index + 0] = l.coord_scale*(truth.x - state.input[box_index + 0]);
-                l.delta[box_index + 1] = l.coord_scale*(truth.y - state.input[box_index + 1]);
+                //truth.x = truth.x - step * s;
+                l.delta[box_index + 0] = l.coord_scale*(truth.x - out.x);
+                l.delta[box_index + 1] = l.coord_scale*(truth.y - out.y);
                 //l.delta[box_index + 2] = l.coord_scale*(sqrt(truth.w) - state.input[box_index + 2]);
-                l.delta[box_index + 3] = l.coord_scale*(sqrt(truth.h) - state.input[box_index + 3]);
+                l.delta[box_index + 3] = l.coord_scale*(truth.h - out.h);
 
                 count++;
             }
@@ -186,8 +191,10 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int t
     }
 
     if(! state.train){
-        //copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, (l.n* truth_index)+1);
-        //in_cpu[0] = 1; in_cpu[1] = 0; in_cpu[2] = 0; in_cpu[3] = 0; in_cpu[4] = 1;
+        truth_index = (int)truth_index * 1.2;
+        copy_ongpu(l.batch*l.inputs, state.input, 1, l.output_gpu, (l.n* truth_index)+1);
+        //in_cpu[0] = 1; in_cpu[1] = 0.5; in_cpu[2] = 0.5; in_cpu[3] = 0.5; in_cpu[4] = 0; in_cpu[5] = 1;
+        //in_cpu[6] = 1; in_cpu[7] = 0.5; in_cpu[8] = 0.5; in_cpu[9] = 0.5; in_cpu[10] = 0; in_cpu[11] = 1;
         for (int i = 0; i < l.inputs; i++){
             l.output[truth_index *l.n + i] = in_cpu[i];
         }
@@ -201,7 +208,7 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int t
     cpu_state.input = in_cpu;
     forward_pyramid_layer(l, cpu_state, truth_index, level);
     //cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    //cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
+    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     free(cpu_state.input);
     if(cpu_state.truth) free(cpu_state.truth);
 }
@@ -209,6 +216,7 @@ void forward_pyramid_layer_gpu(const pyramid_layer l, network_state state, int t
 void backward_pyramid_layer_gpu(pyramid_layer l, network_state state)
 {
     axpy_ongpu(l.batch*l.inputs, 1, l.delta_gpu, 1, state.delta, 1);
+    //cuda_pull_array(l.delta_gpu, l.delta, l.batch*l.inputs);
     //copy_ongpu(l.batch*l.inputs, l.delta_gpu, 1, state.delta, 1);
 }
 #endif

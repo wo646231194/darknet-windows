@@ -278,10 +278,10 @@ pyramid_layer parse_pyramid(list *options, size_params params)
 {
     int coords = option_find_int(options, "coords", 1);
     int classes = option_find_int(options, "classes", 1);
-    //int rescore = option_find_int(options, "rescore", 0);
+    int rescore = option_find_int(options, "rescore", 0);
     int num = option_find_int(options, "num", 4);
     int level = option_find_int(options, "level", 4);
-    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, 0);
+    pyramid_layer layer = make_pyramid_layer(params.batch, params.inputs, num, level, classes, coords, rescore);
 
     layer.softmax = option_find_int(options, "softmax", 0);
     layer.sqrt = option_find_int(options, "sqrt", 0);
@@ -301,6 +301,7 @@ pyramidpool_layer parse_pyramidpool(list *options, size_params params)
     pyramidpool_layer layer;
     int level = option_find_int(options, "level", 2);
     int size = option_find_int(options, "size", 2);
+    int pad = option_find_int(options, "pad", 1);
 
     int batch, h, w, c;
     h = params.h;
@@ -309,7 +310,7 @@ pyramidpool_layer parse_pyramidpool(list *options, size_params params)
     batch = params.batch;
     if (!(h && w && c)) error("Layer before pyramidpool layer must output image.");
 
-    layer = make_pyramidpool_layer(batch, h, w, c, level, size);
+    layer = make_pyramidpool_layer(batch, h, w, c, level, size, pad);
     return layer;
 }
 

@@ -155,7 +155,7 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
                 for (m = -pad; m < py.size + pad; ++m){
                     out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                     in = in_index + n*l.w + m;
-                    if (in < 0){
+                    if (in < 0 || in > l.inputs){
                         l.output[out] = 0;
                     }
                     else{
@@ -235,7 +235,7 @@ void forward_pyramidpool_layer_test(float * incpu, layer l, layer py, network_st
                         for (m = -pad; m < py.size + pad; ++m){
                             out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                             in = in_index + n*l.w + m;
-                            if (in < 0){
+                            if (in < 0 || in >= l.inputs){
                                 l.output[out] = 0;
                             }
                             else{
