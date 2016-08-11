@@ -359,7 +359,7 @@ void test_pyramid(char *cfgfile, char *weightfile, char *filename, float thresh)
         save_image(im, "predictions");
         show_image(im, "predictions");
 
-        show_image(sized, "resized");
+        //show_image(sized, "resized");
         free_image(im);
         free_image(sized);
 #ifdef OPENCV

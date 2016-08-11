@@ -50,9 +50,10 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
     //memcpy(l.output, state.input, l.outputs*l.batch*sizeof(float));
     int b, s, is_obj;
     if(state.train){
-        float avg_loc = 0;
         int count = 0;
-        float conf_loss = 0;
+        float avg_loc = 0;
+        float pos_loss = 0;
+        float neg_loss = 0;
         float loc_loss = 0;
         *(l.cost) = 0;
         int size = l.inputs * l.batch;
@@ -71,7 +72,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                     //l.delta[p_index] = l.noobject_scale*(0 - state.input[p_index]);
                     //l.delta[p_index] = l.noobject_scale*(0 - h_theta_x);
                     //conf_loss += pow(l.delta[p_index] + 1, 2);
-                    conf_loss -= log(1 - h_theta_x);
+                    neg_loss -= log(1 - h_theta_x);
                     //l.delta[p_index + 1] = 0-state.input[p_index + 1];
                     //l.delta[p_index + 2] = 0-state.input[p_index + 2];
                     //l.delta[p_index + 3] = 0-state.input[p_index + 3];
@@ -80,7 +81,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                     //    smooth_l1(state.input[p_index + 2], l.coord_scale) +
                     //    smooth_l1(state.input[p_index + 3], l.coord_scale) +
                     //    smooth_l1(state.input[p_index + 4], l.coord_scale);
-                    *l.cost = conf_loss + 1;
+                    //*l.cost = conf_loss ;
                     //printf("neg %d  ->  all  %.5f, conf  %.5f, loc %.5f  \n", level, *l.cost, conf_loss, loc_loss / 4);
                     continue;
                 }
@@ -144,28 +145,32 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
                 float h_theta_x = state.input[box_index-1];
                 //l.delta[box_index - 1] = l.object_scale*(iou - state.input[box_index - 1]);
                 l.delta[box_index -1] = l.object_scale*(iou - h_theta_x);
-                conf_loss -= log(h_theta_x);
+                pos_loss = pos_loss - log(h_theta_x) - log(state.input[box_index - 2]);
                 //conf_loss += pow(l.delta[box_index - 1] + loc_loss, 2);
 
                 //printf("%d,", best_index);
-                *(l.cost) += conf_loss + loc_loss;
+                //*(l.cost) += conf_loss + loc_loss;
                 //for (int t = 0; t < 4; t++){
                 //l.delta[box_index + t] = smooth_l1(state.truth[truth_index + t] - state.input[box_index + t], l.coord_scale);
                 //l.delta[box_index + t] = l.coord_scale*(state.truth[truth_index + 0] - state.input[box_index + 0]);
                 //}
                 //truth.x = truth.x - step * s;
-                l.delta[box_index + 0] = l.coord_scale*(truth.x - out.x);
+                l.delta[box_index + 0] = l.coord_scale*(truth.x - out.x)*l.n;
                 l.delta[box_index + 1] = l.coord_scale*(truth.y - out.y);
                 //l.delta[box_index + 2] = l.coord_scale*(sqrt(truth.w) - state.input[box_index + 2]);
-                l.delta[box_index + 3] = l.coord_scale*(truth.h - out.h);
+                l.delta[box_index + 3] = l.coord_scale*(truth.h - out.h)*2.0;
 
                 count++;
             }
+            pos_loss = pos_loss / count;
+            loc_loss = loc_loss / count;
+            neg_loss = neg_loss / (l.n - count);
+            *(l.cost) += pos_loss + loc_loss + neg_loss;
             if (loc_loss){
-                printf("p   %d  ->  all  %.5f, conf  %.5f, loc %.5f  \n", level, *l.cost / count, conf_loss / count, loc_loss / count);
+                printf("p   %d  ->  all  %.5f, pos  %.5f, loc %.5f, neg %.5f  \n", level, *l.cost, pos_loss, loc_loss, neg_loss);
             }
             else{
-                printf("neg %d  ->  all  %.5f, conf  %.5f, loc %.5f  \n", level, *l.cost, conf_loss, loc_loss);
+                printf("neg %d  ->  all  %.5f, pos  %.5f, loc %.5f, neg %.5f  \n", level, *l.cost, pos_loss, loc_loss, neg_loss);
             }
         }
     }
