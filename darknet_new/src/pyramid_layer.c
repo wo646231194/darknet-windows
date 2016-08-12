@@ -164,7 +164,7 @@ void forward_pyramid_layer(const pyramid_layer l, network_state state, int truth
             }
             pos_loss = pos_loss / count;
             loc_loss = loc_loss / count;
-            neg_loss = neg_loss / (l.n - count);
+            neg_loss = neg_loss / l.n;
             *(l.cost) += pos_loss + loc_loss + neg_loss;
             if (loc_loss){
                 printf("p   %d  ->  all  %.5f, pos  %.5f, loc %.5f, neg %.5f  \n", level, *l.cost, pos_loss, loc_loss, neg_loss);

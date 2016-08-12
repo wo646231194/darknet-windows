@@ -119,17 +119,19 @@ void get_truth_xy(float *truth, int *num_truth, int *truth_x, int *truth_y, int 
 void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state state, int now, float *delta, int x, int y)
 {
     int b,i,j,k,m,n;
-    int h, w, c, th, level=0, in, out;
+    int h, w, c, th, level=0, in, out, len;
     int pad = py.pad;
 
     if (l.type == PYRAMIDPOOL){
         h = l.h;
         w = l.w;
         c = l.c;
+        len = l.inputs;
     } else{
         h = l.out_h;
         w = l.out_w;
         c = l.out_c;
+        len = l.outputs;
     }
 
     th = h/2;
@@ -155,7 +157,7 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
                 for (m = -pad; m < py.size + pad; ++m){
                     out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                     in = in_index + n*w + m;
-                    if (in < 0 || in > l.inputs){
+                    if (i + n < 0 || i + n >= w || j + m < 0 || j + m >= w){
                         py.output[out] = 0;
                     }
                     else{
@@ -180,7 +182,7 @@ void forward_pyramidpool_layer(float * incpu, layer l, layer py, network_state s
                     for (m = -pad; m < py.size + pad; ++m){
                         out = (m + pad) + (n + pad)*(py.size * 2) + k*(py.size*py.size * 2 * 2);
                         in = in_index + n*w + m;
-                        if (in>=0){
+                        if (i + n >= 0 && i + n < w && j + m >= 0 && j + m < w){
                             delta[in] = py.delta[out];
                         }
                     }
@@ -296,9 +298,9 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
             forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
         }
     }
-    //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
+
+    forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);//neg
     for (int j = 1; j < l.level; j++){
-        state.input = lm.output_gpu;
         lm = state.net.pyramid[j - 1];
         forward_maxpool_layer_gpu(lm, state);
 
@@ -309,7 +311,8 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
                 forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
             }
         }
-        //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);
+
+        //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);//neg
     }
     free(cpu_state.input);
 
