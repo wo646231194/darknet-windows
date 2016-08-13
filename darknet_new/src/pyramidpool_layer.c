@@ -298,8 +298,8 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
             forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
         }
     }
+    //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);//neg
 
-    forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);//neg
     for (int j = 1; j < l.level; j++){
         lm = state.net.pyramid[j - 1];
         forward_maxpool_layer_gpu(lm, state);
@@ -311,7 +311,6 @@ void forward_pyramidpool_layer_gpu(layer l, network_state state, int i)
                 forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, truth_x[t], truth_y[t]);
             }
         }
-
         //forward_pyramidpool_layer(in_cpu, lm, l, cpu_state, i + 1, delta_cpu, -1, -1);//neg
     }
     free(cpu_state.input);

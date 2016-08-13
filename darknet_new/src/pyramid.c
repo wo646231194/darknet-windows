@@ -107,7 +107,7 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
                     b.h = b.h / 2.0;
                     b.h = b.h + 0.5;
                     b.w = b.h / 3.2;
-                    if (i == 3){
+                    if (prob > thresh){
                         probs[box_index] = prob;
                         //boxes[box_index].x = (b.x + 0.5 + j) / row ;
                         //boxes[box_index].y = (b.y + 0.5 + c) / row ;
@@ -120,6 +120,11 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
                         boxes[box_index].y = (b.y + j ) / row;
                         boxes[box_index].w = b.w / row ;
                         boxes[box_index].h = b.h / row ;
+
+                        boxes[box_index].x *= w;
+                        boxes[box_index].y *= h;
+                        boxes[box_index].w *= w;
+                        boxes[box_index].h *= h;
                     }
                 }   
             }
@@ -128,17 +133,17 @@ void convert_pyramid_detections(float *predictions, int level, int num, int squa
     }
 }
 
-void print_pyramid_detections(FILE **fps, int id, box *boxes, float **probs, int total, int classes, int w, int h)
+void print_pyramid_detections(FILE **fps, int id, box *boxes, float *probs, int total, int classes, int w, int h)
 {
     int i, j;
     for(i = 0; i < total; ++i){
         for(j = 0; j < classes; ++j){
-			if (probs[i][j]) fprintf(fps[j], "%d %f %f %f %f %f\n", id, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h, probs[i][j]*100);
+            if (probs[i]) fprintf(fps[j], "%d %.2f %.2f %.2f %.2f %.2f\n", id, boxes[i].x - boxes[i].w / 2, boxes[i].y - boxes[i].h / 2, boxes[i].w, boxes[i].h, probs[i] * 100);
         }
     }
 }
 
-void validate_pyramid(char *cfgfile, char *weightfile)
+void validate_pyramid(char *cfgfile, char *weightfile, float thresh)
 {
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
@@ -156,8 +161,7 @@ void validate_pyramid(char *cfgfile, char *weightfile)
 
     layer l = net.layers[net.n-1];
     int classes = l.classes;
-    int square = l.sqrt;
-    int side = l.side;
+    int level = l.level;
 
     int j;
     FILE **fps = calloc(classes, sizeof(FILE *));
@@ -166,15 +170,17 @@ void validate_pyramid(char *cfgfile, char *weightfile)
 		_snprintf(buff, 1024, "%s%s.txt", base, perdestrian_names[j]);
         fps[j] = fopen(buff, "w");
     }
-    box *boxes = calloc(side*side*l.n, sizeof(box));
-    float **probs = calloc(side*side*l.n, sizeof(float *));
-    for(j = 0; j < side*side*l.n; ++j) probs[j] = calloc(classes, sizeof(float *));
+    int k = 0;
+    for (int i = 0; i < l.level; i++){
+        k += pow(2, 2 * i);
+    }
+    box *boxes = calloc(k*l.n + 1, sizeof(box));
+    float *probs = calloc(k*l.n + 1, sizeof(float *));
 
     int m = plist->size;
     int i=0;
     int t;
 
-    float thresh = .001;
     int nms = 1;
     float iou_thresh = .5;
 
@@ -217,9 +223,9 @@ void validate_pyramid(char *cfgfile, char *weightfile)
             float *predictions = network_predict(net, X);
             int w = val[t].w;
             int h = val[t].h;
-            convert_pyramid_detections(predictions, classes, l.n, square, side, w, h, thresh, probs, boxes, 0);
-            if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
-            print_pyramid_detections(fps, (i+t-1), boxes, probs, side*side*l.n, classes, w, h);
+            convert_pyramid_detections(predictions, l.level, l.n, l.sqrt, l.side, w, h, thresh, probs, boxes, 0);
+            //if (nms) do_nms_sort(boxes, probs, side*side*l.n, classes, iou_thresh);
+            print_pyramid_detections(fps, (i + t - 1), boxes, probs, k*l.n, classes, w, h);
             free(id);
             free_image(val[t]);
             free_image(val_resized[t]);
@@ -452,7 +458,7 @@ void run_pyramid(int argc, char **argv)
     char *filename = (argc > 5) ? argv[5]: 0;
     if(0==strcmp(argv[2], "test")) test_pyramid(cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "train")) train_pyramid(cfg, weights);
-    else if(0==strcmp(argv[2], "valid")) validate_pyramid(cfg, weights);
+    else if(0==strcmp(argv[2], "valid")) validate_pyramid(cfg, weights, thresh);
     else if(0==strcmp(argv[2], "recall")) validate_pyramid_recall(cfg, weights);
 	else if (0 == strcmp(argv[2], "demo")) demo(cfg, weights, thresh, cam_index, filename, perdestrian_names, voc_labels, 1, frame_skip);
     else if (0 == strcmp(argv[2], "truth")) truth_pyramid(cfg, weights, filename, thresh);
