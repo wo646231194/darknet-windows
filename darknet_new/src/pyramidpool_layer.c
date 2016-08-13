@@ -47,7 +47,7 @@ pyramidpool_layer make_pyramidpool_layer(int batch, int h, int w, int c, int lev
     #endif
     fprintf(stderr, "Pyramidpool Layer: %d level, %d size -> %d x %d x %d image\n", level, size, l.layer.out_h, l.layer.out_w, l.layer.out_c);
     for (int i = 1; i < l.layer.level; i++){
-        l.maxpool[i - 1] = make_maxpool_layer_show(l.layer.batch, h, w, c, l.layer.size, l.layer.size, 1);
+        l.pool[i - 1] = make_maxpool_layer_show(l.layer.batch, h, w, c, l.layer.size, l.layer.size, 1);
         h /= 2; w /= 2;
     }
     return l;

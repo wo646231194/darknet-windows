@@ -12,7 +12,7 @@
 typedef struct pyramidpool_layer
 {
     layer layer;
-    maxpool_layer maxpool[5];
+    maxpool_layer pool[5];
     int type;
 }pyramidpool_layer;
 
