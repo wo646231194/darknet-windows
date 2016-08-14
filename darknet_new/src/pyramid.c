@@ -141,6 +141,15 @@ void print_pyramid_detections(FILE **fps, int id, box *boxes, float *probs, int 
             if (probs[i]) fprintf(fps[j], "%d %.2f %.2f %.2f %.2f %.2f\n", id, boxes[i].x - boxes[i].w / 2, boxes[i].y - boxes[i].h / 2, boxes[i].w, boxes[i].h, probs[i] * 100);
         }
     }
+    for (i = 0; i < total; ++i){
+        for (j = 0; j < classes; ++j){
+            probs[i] = 0.0;
+            boxes[i].x = 0.0;
+            boxes[i].y = 0.0;
+            boxes[i].w = 0.0;
+            boxes[i].h = 0.0;
+        }
+    }
 }
 
 void validate_pyramid(char *cfgfile, char *weightfile, float thresh)
