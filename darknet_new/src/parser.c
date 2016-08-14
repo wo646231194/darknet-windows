@@ -666,7 +666,7 @@ network parse_network_cfg(char *filename)
 #endif
     }
     for (int j = 0; j < (pl.layer.level-1); j++){
-        net.pyramid[j] = pl.maxpool[j];
+        net.pyramid[j] = pl.pool[j];
     }
     return net;
 }
@@ -1011,6 +1011,12 @@ void save_weights_upto(network net, char *filename, int cutoff)
             fwrite(l.biases, sizeof(float), l.outputs, fp);
             fwrite(l.filters, sizeof(float), size, fp);
         }
+        if (l.type == PYRAMIDPOOL){
+            for (int j = 0; j < l.level; ++j){
+                layer lin = net.pyramid[j];
+                save_convolutional_weights(lin, fp);
+            }
+        }
     }
     fclose(fp);
 }
@@ -1191,6 +1197,12 @@ void load_weights_upto(network *net, char *filename, int cutoff)
                 push_local_layer(l);
             }
 #endif
+        }
+        if (l.type == PYRAMIDPOOL){
+            for (int j = 0; j < l.level; ++j){
+                layer lin = net->pyramid[j];
+                load_convolutional_weights(lin, fp);
+            }
         }
     }
     fprintf(stderr, "Done!\n");
