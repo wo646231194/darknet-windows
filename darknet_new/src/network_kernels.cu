@@ -231,6 +231,9 @@ void backward_network_pyramid_gpu(network net, network_state state, int end)
         state.index = i;
         layer l = net.layers[i];
         layer prev = net.layers[i - 1];
+        if (prev.type == PYRAMIDPOOL){
+            prev = net.pyramid[prev.level - 2];
+        }
         state.input = prev.output_gpu;
         state.delta = prev.delta_gpu;
 
@@ -273,6 +276,13 @@ void backward_network_pyramid_gpu(network net, network_state state, int end)
         } else if (l.type == PYRAMID){
             backward_pyramid_layer_gpu(l, state);
         } else if (l.type == PYRAMIDPOOL){
+            for (int j = l.level-1; j >1; j--){
+                l = net.pyramid[j - 1];
+                prev = net.pyramid[j - 2];
+                state.input = prev.output_gpu;
+                state.delta = prev.delta_gpu;
+                backward_convolutional_layer_gpu(l, state);
+            }
             backward_pyramidpool_layer_gpu(l, state);
         }
     }
