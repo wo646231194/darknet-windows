@@ -1014,7 +1014,9 @@ void save_weights_upto(network net, char *filename, int cutoff)
         if (l.type == PYRAMIDPOOL){
             for (int j = 0; j < l.level; ++j){
                 layer lin = net.pyramid[j];
-                save_convolutional_weights(lin, fp);
+                if (lin.type == CONVOLUTIONAL){
+                    save_convolutional_weights(lin, fp);
+                }
             }
         }
     }
@@ -1201,7 +1203,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
         if (l.type == PYRAMIDPOOL){
             for (int j = 0; j < l.level; ++j){
                 layer lin = net->pyramid[j];
-                load_convolutional_weights(lin, fp);
+                if (lin.type == CONVOLUTIONAL){
+                    load_convolutional_weights(lin, fp);
+                }
             }
         }
     }
