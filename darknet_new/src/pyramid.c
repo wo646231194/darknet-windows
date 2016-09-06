@@ -17,6 +17,8 @@ void train_pyramid(char *cfgfile, char *weightfile)
 {
     char *train_images = "E:/Experiment/YOLO/yolo_train/VOCdevkit/Caltech/train.txt";
     char *backup_directory = "E:/Experiment/YOLO/yolo_train/backup";
+    char *log_file = "E:/Experiment/YOLO/yolo_train/backup/log.csv";
+    FILE *log = fopen(log_file, "w");
     srand(time(0));
     data_seed = time(0);
     char *base = basecfg(cfgfile);
@@ -69,6 +71,10 @@ void train_pyramid(char *cfgfile, char *weightfile)
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
+        if (log){
+            fprintf(log,"%d,%.5f\n", i, loss);
+            fflush(log);
+        }
 
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if( i%100 == 0 ){
