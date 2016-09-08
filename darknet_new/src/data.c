@@ -167,13 +167,13 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 {
     int i;
     for(i = 0; i < n; ++i){
-        //boxes[i].left   = boxes[i].left  * sx - dx;
-        //boxes[i].right  = boxes[i].right * sx - dx;
-        //boxes[i].top    = boxes[i].top   * sy - dy;
-        //boxes[i].bottom = boxes[i].bottom* sy - dy;
+        boxes[i].x = boxes[i].x * sx - dx;
+        boxes[i].y = boxes[i].y * sx - dx;
+        boxes[i].w = boxes[i].w * sy - dy;
+        boxes[i].h = boxes[i].h * sy - dy;
 
         if(flip){
-            boxes[i].x = 1 - boxes[i].x - boxes[i].w;
+            boxes[i].x = 1.0 - boxes[i].x - boxes[i].w;
         }
 
         boxes[i].left =  constrain(0, 1, boxes[i].left);
@@ -270,12 +270,12 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-int get_pyramid_level(int level, float width){
+int get_pyramid_level(int level, float height){
     float v = 1.0;
     int i;
     for (i = 0; i < level; i++){
         v = v / 2;
-        if (width>=v) return i;
+        if (height >= v) return i;
     }
 }
 
@@ -287,7 +287,30 @@ int get_pyramid_index(int level){
     return sum;
 }
 
-void fill_truth_pyramid(char *path, float *truth, int classes, int level, int flip, int size)
+void get_truth_pyramid(char *path, int pyramid[], int *count){
+    char *labelpath = find_replace(path, "images", "labels");
+    labelpath = find_replace(labelpath, "JPEGImages", "labels");
+
+    labelpath = find_replace(labelpath, ".jpg", ".txt");
+    labelpath = find_replace(labelpath, ".JPG", ".txt");
+    labelpath = find_replace(labelpath, ".JPEG", ".txt");
+    *count = 0;
+    box_label *boxes = read_boxes(labelpath, count);
+    int i;
+    float h;
+    for (i = 0; i < *count; ++i) {
+        h = boxes[i].h;
+        int ci = 0;
+        float hs= 0.5;
+        while (h<hs){
+            hs /= 2;
+            ci++;
+        }
+        pyramid[ci]++;
+    }
+}
+
+void fill_truth_pyramid(char *path, float *truth, float dw, int level, int flip, int size,float dx, float dy)
 {
     char *labelpath = find_replace(path, "images", "labels");
     labelpath = find_replace(labelpath, "JPEGImages", "labels");
@@ -298,7 +321,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
-    correct_boxes(boxes, count, 0, 0, 1, 1, flip);
+    correct_boxes(boxes, count, -dx, -dy, dw, dw, flip);
     float x, y, w, h, cx, cy;
     int id;
     int i, j, index;
@@ -313,7 +336,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         cy = boxes[i].y + boxes[i].h / 2;
 
         if (w < .01 || h < .01) continue;
-        j = get_pyramid_level(level, h);
+        j = get_pyramid_level(4, h);
 
         int num = pow(2, j);
         x = cx*num - floor(cx*num) ;
@@ -324,7 +347,7 @@ void fill_truth_pyramid(char *path, float *truth, int classes, int level, int fl
         index = get_pyramid_index(j) + floor(cy*num)*num + floor(cx*num);
         index = index * size + floor(x*size);
 
-        if (truth[index * 5]) continue;
+        if (truth[index * 5] == 1) continue;
 
         truth[index * 5 + 0] = 1;
         truth[index * 5 + 1] = x;
@@ -570,6 +593,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
 
 data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int f, int size)
 {
+    int ow = w, oh = h;
     char **random_paths = get_random_paths(paths, n, m);
     int i, flip=0;
     data d = { 0 };
@@ -581,29 +605,50 @@ data load_data_pyramid(int n, char **paths, int m, int w, int h, int level, int 
     d.fname = random_paths[0];
 
     int k = 0;
-    for (int i = 0; i < level; i++){
+    for (int i = 0; i < 4; i++){
         k += pow(2, 2 * i);
     }
     k = k * 5 * size;
     d.y = make_matrix(n, k);
     srand((unsigned int)time(0));
     for (i = 0; i < n; ++i){
+        w = ow; h = oh;
         image orig = load_image_color(random_paths[i], 0, 0);
+        int count, pyramid[5] = { 0 };
+        get_truth_pyramid(random_paths[i], pyramid, &count);
+        for (int j = 0; j < level-1; j++){
+            if (pyramid[j]>0 && pyramid[level-1]==0){
+                int scale = pow(2, level - j - 1);
+                w = w / scale;
+                h = h / scale;
+            }
+        }
+        image sized = resize_image(orig, w, h);
+        float jitter = 1.0 / pow(2, level);
+        int dw = rand_uniform(0, ow*jitter);
+        image embed = make_image(ow + 2*dw, oh + 2*dw, 3);
 
-        int oh = orig.h;
-        int ow = orig.w;
+        int px = rand_uniform(0, 2*dw);
+        int py = rand_uniform(0, 2*dw);
+        embed_image(sized, embed, px, py);
+        image cropped = crop_image(embed, dw, dw, ow, oh);
+
+        //show_image(cropped, "cropped");
+        //cvWaitKey(0);
+        //cvDestroyAllWindows();
 
         if (f){
             flip = rand() % 2;
         }
 
-        image sized = resize_image(orig, w, h);
-        if (flip) flip_image(sized);
-        d.X.vals[i] = sized.data;
+        if (flip) flip_image(cropped);
+        d.X.vals[i] = cropped.data;
 
-        fill_truth_pyramid(random_paths[i], d.y.vals[i], 1, level, flip, size);
+        fill_truth_pyramid(random_paths[i], d.y.vals[i], 1.0 * w / ow, level, flip, size, 1.0*(px - dw) / ow, 1.0*(py - dw) / oh);
 
         free_image(orig);
+        free_image(sized);
+        free_image(embed);
     }
     free(random_paths);
     return d;
@@ -976,6 +1021,7 @@ void get_random_batch(data d, int n, float *X, float *y)
 void get_next_batch(data d, int n, int offset, float *X, float *y)
 {
     int j;
+    printf("%d : ", offset / n);
     for(j = 0; j < n; ++j){
         int index = offset + j;
         memcpy(X+j*d.X.cols, d.X.vals[index], d.X.cols*sizeof(float));

@@ -36,7 +36,7 @@ void train_pyramid(char *cfgfile, char *weightfile)
 
     layer l = net.layers[net.n - 1];
 
-    int level = l.level;
+    int level = net.level;
     int classes = l.classes;
 
     list *plist = get_paths(train_images);

@@ -21,6 +21,7 @@ typedef struct network{
     float decay;
     layer *layers;
     layer pyramid[5];
+    int level;
     int outputs;
     float *output;
     learning_rate_policy policy;

@@ -504,6 +504,7 @@ void parse_net_options(list *options, network *net)
     net->batch /= subdivs;
     net->batch *= net->time_steps;
     net->subdivisions = subdivs;
+    net->level = option_find_int(options, "level", 4);
 
     net->h = option_find_int_quiet(options, "height",0);
     net->w = option_find_int_quiet(options, "width",0);
@@ -665,7 +666,7 @@ network parse_network_cfg(char *filename)
         net.workspace = calloc(1, workspace_size);
 #endif
     }
-    for (int j = 0; j < (pl.layer.level-1); j++){
+    for (int j = 0; j < pl.layer.level; j++){
         net.pyramid[j] = pl.pool[j];
     }
     return net;
